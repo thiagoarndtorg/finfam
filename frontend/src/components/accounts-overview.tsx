@@ -1,0 +1,236 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus, Send, CreditCard, MoreHorizontal, RefreshCcw } from "lucide-react";
+import { AddAccountModal } from "./add-account-modal";
+import { TransferModal } from "./transfer-modal";
+import { AddExpenseModal } from "./add-expense-modal";
+import { useFamilyAccountsTemp, useSyncAccount } from "@/hooks/use-api";
+import { useFamily } from "@/contexts/family-context";
+import { Account } from "@/types/account-type";
+import toast from "react-hot-toast";
+
+export function AccountsOverview() {
+  const { familyId, refreshFamilyData } = useFamily();
+  const { data: accountsData, isLoading, error, execute: fetchAccounts } = useFamilyAccountsTemp();
+  const { execute: syncAccount } = useSyncAccount();
+  const { data: banksData }: any = [];
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [refreshingAccountId, setRefreshingAccountId] = useState<number | null>(null);
+  const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
+
+  // Buscar contas quando o componente montar ou familyId mudar
+  useEffect(() => {
+    if (familyId) {
+      fetchAccounts(familyId);
+    }
+  }, [familyId]); // Removido fetchAccounts da dependência
+
+  // Atualizar accounts quando accountsData mudar
+  useEffect(() => {
+    if (accountsData?.accounts) {
+      setAccounts(accountsData.accounts);
+    }
+  }, [accountsData]);
+
+  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
+
+  const handleAddAccount = (newAccount: Account) => {
+    setAccounts([...accounts, newAccount]);
+    setIsAddAccountModalOpen(false);
+  };
+
+  const handleTransfer = async (amount: number, fromAccount: number, toAccount: number) => {
+    // Note: In a real app, you would call the API here to create the transfer transaction
+    // For now, we'll just update local state and refresh data
+    
+    setAccounts(
+      accounts.map((account) => {
+        if (account.id === fromAccount) {
+          return { ...account, balance: account.balance - amount };
+        }
+        if (account.id === toAccount) {
+          return { ...account, balance: account.balance + amount };
+        }
+        return account;
+      })
+    );
+    
+    // Refresh family data to get latest balance and transactions from backend
+    try {
+      await refreshFamilyData();
+    } catch (error) {
+      console.error("Failed to refresh family data after transfer:", error);
+    }
+    
+    setIsTransferModalOpen(false);
+  };
+
+  const handleAddExpense = async (amount: number, account: number, category: string) => {
+    // Note: In a real app, you would call the API here to create the expense transaction
+    // For now, we'll just update local state and refresh data
+    
+    setAccounts(
+      accounts.map((acc) => {
+        if (acc.id === account) {
+          return { ...acc, balance: acc.balance - amount };
+        }
+        return acc;
+      })
+    );
+    
+    // Refresh family data to get latest balance and transactions from backend
+    try {
+      await refreshFamilyData();
+    } catch (error) {
+      console.error("Failed to refresh family data after expense:", error);
+    }
+    
+    setIsAddExpenseModalOpen(false);
+  };
+
+  const handleRefreshAccounts = async () => {
+    try {
+      // The refreshFamilyData function now includes auto-sync
+      await refreshFamilyData();
+    } catch (error) {
+      console.error("Failed to refresh accounts:", error);
+    }
+  };
+
+  const handleRefreshSingleAccount = async (accountId: number) => {
+    if (!familyId) {
+      toast.error("Family ID is required");
+      return;
+    }
+
+    setRefreshingAccountId(accountId);
+    try {
+      await syncAccount(accountId, familyId);
+      // Refresh accounts list to show updated balance
+      await fetchAccounts(familyId);
+      toast.success("Account refreshed successfully");
+    } catch (error: any) {
+      console.error("Failed to refresh account:", error);
+      toast.error(error?.message || "Failed to refresh account. You may need to reconnect your bank account.");
+    } finally {
+      setRefreshingAccountId(null);
+    }
+  };
+
+  // Função para obter o nome do banco
+  const getBankName = (bankId: number) => {
+    if (!banksData?.banks) return `Banco ID: ${bankId}`;
+    const bank = banksData.banks.find((b: { id: number }) => b.id === bankId);
+    return bank ? bank.name : `Banco ID: ${bankId}`;
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-xl font-medium">Accounts Overview</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleRefreshAccounts}
+          title="Refresh accounts"
+        >
+          <RefreshCcw className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="text-sm text-muted-foreground mt-2">Carregando contas...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-red-600">Erro ao carregar contas</p>
+            <Button size="sm" onClick={handleRefreshAccounts} className="mt-2">
+              Tentar novamente
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold mb-4">R$ {totalBalance.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mb-6">Total balance across all accounts</p>
+            <div className="space-y-4 mb-6">
+              {accounts.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">Nenhuma conta conectada</p>
+                  <p className="text-xs text-muted-foreground">
+                    Use o botão "Add Account" para conectar uma conta bancária
+                  </p>
+                </div>
+              ) : (
+                accounts.map((account) => (
+                  <div key={account.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: account.color }}
+                        aria-hidden="true"
+                      ></div>
+                      <div>
+                        <p className="text-sm font-medium">{account.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getBankName(account.bankId)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">R$ {account.balance.toFixed(2)}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRefreshSingleAccount(account.id)}
+                        disabled={refreshingAccountId === account.id}
+                        className={refreshingAccountId === account.id ? "animate-spin" : ""}
+                        title="Refresh this account"
+                      >
+                        <RefreshCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Button size="sm" onClick={() => setIsAddExpenseModalOpen(true)}>
+            <CreditCard className="mr-2 h-4 w-4" /> Add Expense
+          </Button>
+          <Button size="sm" variant="outline">
+            <MoreHorizontal className="mr-2 h-4 w-4" /> More
+          </Button>
+        </div>
+      </CardContent>
+
+      <AddAccountModal
+        isOpen={isAddAccountModalOpen}
+        onClose={() => setIsAddAccountModalOpen(false)}
+        onAddAccount={handleAddAccount}
+      />
+
+      <TransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onTransfer={handleTransfer}
+        accounts={accounts}
+      />
+
+      <AddExpenseModal
+        isOpen={isAddExpenseModalOpen}
+        onClose={() => setIsAddExpenseModalOpen(false)}
+        onAddExpense={handleAddExpense}
+        accounts={accounts}
+      />
+    </Card>
+  );
+}

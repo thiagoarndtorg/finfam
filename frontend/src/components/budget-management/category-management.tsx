@@ -1,0 +1,290 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Plus, Pencil, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import { useFamily } from "@/contexts/family-context"
+import { useFamilyCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/use-api"
+
+export function CategoryManagement() {
+  const { familyId, categories, setCategories } = useFamily()
+  const { data: categoriesData, execute: fetchCategories } = useFamilyCategories()
+  const { execute: createCategory } = useCreateCategory()
+  const { execute: updateCategory } = useUpdateCategory()
+  const { execute: deleteCategory } = useDeleteCategory()
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [currentCategory, setCurrentCategory] = useState(null)
+  const [newCategory, setNewCategory] = useState({ name: "", color: "#0ea5e9", icon: "📁", isIncome: false })
+
+  // Fetch categories when component mounts
+  useEffect(() => {
+    if (familyId) {
+      fetchCategories(familyId)
+    }
+  }, [familyId])
+
+  // Update context when data changes
+  useEffect(() => {
+    if (categoriesData) {
+      setCategories(categoriesData)
+    }
+  }, [categoriesData, setCategories])
+
+  const handleAddCategory = async () => {
+    try {
+      const result = await createCategory({
+        familyId,
+        name: newCategory.name,
+        color: newCategory.color,
+        icon: newCategory.icon,
+        isIncome: newCategory.isIncome
+      })
+      
+      if (result) {
+        setCategories([...categories, result])
+        setNewCategory({ name: "", color: "#0ea5e9", icon: "📁", isIncome: false })
+        setIsAddDialogOpen(false)
+        toast.success("Category added successfully")
+      }
+    } catch (error) {
+      toast.error("Failed to add category")
+    }
+  }
+
+  const handleEditCategory = async () => {
+    try {
+      const result = await updateCategory({
+        id: currentCategory.id,
+        familyId,
+        name: currentCategory.name,
+        color: currentCategory.color,
+        icon: currentCategory.icon,
+        isIncome: currentCategory.isIncome
+      })
+      
+      if (result) {
+        setCategories(categories.map((category) => (category.id === currentCategory.id ? result : category)))
+        setIsEditDialogOpen(false)
+        toast.success("Category updated successfully")
+      }
+    } catch (error) {
+      toast.error("Failed to update category")
+    }
+  }
+
+  const handleDeleteCategory = async () => {
+    try {
+      await deleteCategory({ id: currentCategory.id, familyId })
+      setCategories(categories.filter((category) => category.id !== currentCategory.id))
+      setIsDeleteDialogOpen(false)
+      toast.success("Category deleted successfully")
+    } catch (error) {
+      toast.error("Failed to delete category")
+    }
+  }
+
+  const openEditDialog = (category) => {
+    setCurrentCategory({ ...category })
+    setIsEditDialogOpen(true)
+  }
+
+  const openDeleteDialog = (category) => {
+    setCurrentCategory(category)
+    setIsDeleteDialogOpen(true)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Category
+        </Button>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">Color</TableHead>
+              <TableHead className="w-[50px]">Icon</TableHead>
+              <TableHead>Category Name</TableHead>
+              <TableHead className="text-right w-[120px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {categories.map((category) => (
+              <TableRow key={category.id}>
+                <TableCell>
+                  <div className="w-6 h-6 rounded-full" style={{ backgroundColor: category.color }}></div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-xl">{category.icon}</div>
+                </TableCell>
+                <TableCell className="font-medium">{category.name}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(category)}>
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(category)}>
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogDescription>Create a new expense category to organize your spending</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="category-name">Category Name</Label>
+              <Input
+                id="category-name"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                placeholder="e.g., Subscriptions"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="category-color">Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="category-color"
+                  type="color"
+                  value={newCategory.color}
+                  onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                  className="w-12 h-10 p-1"
+                />
+                <div className="w-10 h-10 rounded-md" style={{ backgroundColor: newCategory.color }}></div>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="category-icon">Icon (Emoji)</Label>
+              <Input
+                id="category-icon"
+                value={newCategory.icon}
+                onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                placeholder="📁"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCategory} disabled={!newCategory.name}>
+              Add Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Dialog */}
+      {currentCategory && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>Update the details of this expense category</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-category-name">Category Name</Label>
+                <Input
+                  id="edit-category-name"
+                  value={currentCategory.name}
+                  onChange={(e) => setCurrentCategory({ ...currentCategory, name: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-category-color">Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-category-color"
+                    type="color"
+                    value={currentCategory.color}
+                    onChange={(e) => setCurrentCategory({ ...currentCategory, color: e.target.value })}
+                    className="w-12 h-10 p-1"
+                  />
+                  <div className="w-10 h-10 rounded-md" style={{ backgroundColor: currentCategory.color }}></div>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-category-icon">Icon (Emoji)</Label>
+                <Input
+                  id="edit-category-icon"
+                  value={currentCategory.icon}
+                  onChange={(e) => setCurrentCategory({ ...currentCategory, icon: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditCategory} disabled={!currentCategory.name}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Category Dialog */}
+      {currentCategory && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Category</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this category? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="flex items-center gap-3 p-3 border rounded-md">
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: currentCategory.color }}></div>
+                <div className="text-xl">{currentCategory.icon}</div>
+                <span className="font-medium">{currentCategory.name}</span>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteCategory}>
+                Delete Category
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  )
+}
+

@@ -5,6 +5,8 @@ import { createContext, useContext, useState, useEffect, useMemo, type ReactNode
 import { Transaction } from "@/types/transaction-type";
 import { AccountsResponse } from "@/types/account-type";
 import toast from "react-hot-toast";
+import { apiClient } from "@/middleware/api-client";
+import { ApiError } from "@/middleware/api-client";
 
 // Define the shape of your family data
 type FamilyData = {
@@ -149,11 +151,17 @@ export function FamilyProvider({
     setNotificationRefreshTrigger(prev => prev + 1);
   };
 
-  // Load user's families on mount
+  // Load user's families on mount (only if authenticated)
   useEffect(() => {
     const loadUserFamilies = async () => {
+      // Only try to load families if user is authenticated
+      if (!apiClient.isAuthenticated()) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const families = await getUserFamilies();
+        const families = await getUserFamilies({ suppressToast: true });
         if (families) {
           setUserFamilies(families);
           
@@ -168,7 +176,13 @@ export function FamilyProvider({
           }
         }
       } catch (error) {
-        console.error("Error loading user families:", error);
+        // Handle 403 errors gracefully (user not authenticated or no access)
+        if (error instanceof ApiError && error.status === 403) {
+          console.log("User not authenticated or no access to families - this is expected on login page");
+          setUserFamilies([]);
+        } else {
+          console.error("Error loading user families:", error);
+        }
         setIsLoading(false);
       }
     };
@@ -179,6 +193,12 @@ export function FamilyProvider({
   useEffect(() => {
     const getFamilyFinancials = async () => {
       if (familyId == null) {
+        return;
+      }
+
+      // Only fetch if user is authenticated
+      if (!apiClient.isAuthenticated()) {
+        setIsLoading(false);
         return;
       }
       
@@ -196,14 +216,26 @@ export function FamilyProvider({
         }
 
         // Then fetch family data
-        const result = await execute(familyId);
+        const result = await execute(familyId, { suppressToast: true });
         console.log(result);
-        setFamilyData(result);
-        console.log("Retrieved account data success:", result);
+        if (result) {
+          setFamilyData(result);
+          console.log("Retrieved account data success:", result);
+        } else {
+          // No data is expected when no accounts exist yet
+          setFamilyData({ accounts: [] } as AccountsResponse);
+          console.log("No accounts found - this is normal for new users");
+        }
       } catch (error) {
-        setError(error instanceof Error ? error : new Error("Unknown error"));
-        toast.error("Erro ao retornar informações da conta.");
-        console.error("Retrieved account data error:", error);
+        // Handle 403 errors gracefully
+        if (error instanceof ApiError && error.status === 403) {
+          console.log("Access denied or no data available - setting empty state");
+          setFamilyData({ accounts: [] } as AccountsResponse);
+        } else {
+          setError(error instanceof Error ? error : new Error("Unknown error"));
+          toast.error("Erro ao retornar informações da conta.");
+          console.error("Retrieved account data error:", error);
+        }
       } finally {
         setIsLoading(false);
       }

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useFamilyFinancials } from "./use-api";
 import toast from "react-hot-toast";
 import { AccountsResponse } from "@/types/account-type";
+import { ApiError } from "@/middleware/api-client";
 
 export type FamilyData = {
   // Define your family data type here
@@ -32,19 +33,33 @@ export function useFamilyData(initialFamilyId = 1) {
 
       try {
         console.log("Attempting to fetch family financials for familyId:", familyId);
-        const result = await execute(familyId);
+        const result = await execute(familyId, { suppressToast: true });
 
-        if (isMounted && result != null) {
-          setFamilyData(result);
-          console.log("Retrieved account data success:", result);
-        } else {
-          console.log("No data returned from API");
+        if (isMounted) {
+          if (result != null) {
+            setFamilyData(result);
+            console.log("Retrieved account data success:", result);
+          } else {
+            // No data is expected when no accounts exist yet - set empty state
+            setFamilyData({ accounts: [] } as AccountsResponse);
+            console.log("No accounts found - this is normal for new users");
+          }
         }
       } catch (error) {
         if (isMounted) {
-          setError(error instanceof Error ? error : new Error("Unknown error"));
-          toast.error("Erro ao retornar informações da conta.");
-          console.error("Retrieved account data error:", error);
+          // Check if it's a 403 error - might be expected when no accounts exist
+          const is403Error = error instanceof ApiError && error.status === 403;
+          
+          // Only show error for non-403 errors
+          if (!is403Error) {
+            setError(error instanceof Error ? error : new Error("Unknown error"));
+            toast.error("Erro ao retornar informações da conta.");
+            console.error("Retrieved account data error:", error);
+          } else {
+            // For 403, just set empty state - might be expected when no accounts exist
+            setFamilyData({ accounts: [] } as AccountsResponse);
+            console.log("No data available (403) - setting empty state");
+          }
         }
       } finally {
         if (isMounted) {
@@ -58,7 +73,7 @@ export function useFamilyData(initialFamilyId = 1) {
     return () => {
       isMounted = false;
     };
-  }, [familyId]);
+  }, [familyId, execute]);
 
   return {
     familyId,

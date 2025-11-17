@@ -1,5 +1,6 @@
 package com.example.finfam.service;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.Date;
 import com.auth0.jwt.JWT;
@@ -9,7 +10,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 @Service
 public class JwtService {
 
-    private final String secret = System.getenv("SECRET_KEY");
+    @Value("${secret.key}")
+    private String secret; //Change to get env later
 
     public String generateToken(Integer userId, String email) {
         return JWT.create()

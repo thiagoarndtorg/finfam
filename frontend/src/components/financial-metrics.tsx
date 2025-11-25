@@ -7,18 +7,13 @@ import { Line, LineChart, Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { useFamily } from "@/contexts/family-context"
 import { format, parseISO, eachMonthOfInterval, subMonths, isWithinInterval } from "date-fns"
 
-export function FinancialMetrics({ accountsData }: { accountsData?: any }) {
-  const { filteredTransactions: contextTransactions, categories } = useFamily()
+export function FinancialMetrics() {
+  const { familyId, filteredTransactions: contextTransactions, categories } = useFamily()
 
-  // Build transactions from context or accountsData
+  // Build transactions from context
   const transactions = useMemo(() => {
-    if (contextTransactions.length > 0) {
-      return contextTransactions
-    } else {
-      const accounts = accountsData?.accounts ?? []
-      return accounts.flatMap((a: any) => a.transactions || [])
-    }
-  }, [accountsData, contextTransactions])
+    return contextTransactions
+  }, [familyId, contextTransactions])
 
   // Process monthly income and expenses for last 6 months
   const monthlyData = useMemo(() => {
@@ -107,7 +102,12 @@ export function FinancialMetrics({ accountsData }: { accountsData?: any }) {
         <CardTitle>Financial Metrics</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="income-expenses">
+        {!familyId ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">No family selected</p>
+          </div>
+        ) : (
+          <Tabs defaultValue="income-expenses">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="income-expenses">Income & Expenses</TabsTrigger>
             <TabsTrigger value="category-breakdown">Category Breakdown</TabsTrigger>
@@ -183,6 +183,7 @@ export function FinancialMetrics({ accountsData }: { accountsData?: any }) {
             </div>
           </TabsContent>
         </Tabs>
+        )}
       </CardContent>
     </Card>
   )

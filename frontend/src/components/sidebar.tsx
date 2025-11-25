@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { useFamily } from "@/contexts/family-context";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -35,6 +36,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { isCurrentUserAdmin } = useFamily();
+  
+  const filteredNavigation = navigation.filter(item => 
+    item.name !== 'Budget Management' || isCurrentUserAdmin()
+  );
 
   const NavItem = ({ item, isBottom = false }: any) => (
     <Tooltip delayDuration={0}>
@@ -105,7 +111,7 @@ export function Sidebar() {
           </div>
           <div className="flex-1 overflow-auto">
             <nav className="flex-1 space-y-1 px-2 py-4">
-              {navigation.map((item) => (
+              {filteredNavigation.map((item) => (
                 <NavItem key={item.name} item={item} />
               ))}
             </nav>

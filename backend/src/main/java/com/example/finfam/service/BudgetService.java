@@ -13,6 +13,7 @@ import com.example.finfam.repository.FamilyMemberRepository;
 import com.example.finfam.repository.NotificationRepository;
 import com.example.finfam.repository.TransactionRepository;
 import com.example.finfam.repository.UserRepository;
+import com.example.finfam.exception.CustomException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -35,10 +36,22 @@ public class BudgetService {
     private final NotificationService notificationService;
     private final TransactionRepository transactionRepository;
     private final NotificationRepository notificationRepository;
+    private final FamilyMemberService familyMemberService;
+    private final JwtService jwtService;
 
-    public BudgetResponse create(BudgetRequest request) {
+    public BudgetResponse create(BudgetRequest request, String token) {
         if (request.getFamilyId() == null) {
             throw new IllegalArgumentException("familyId is required");
+        }
+
+        // Validate user is ADMIN
+        String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
+        Integer userId = jwtService.extractUserId(jwtToken);
+        if (userId == null) {
+            throw new CustomException("Token inválido");
+        }
+        if (!familyMemberService.isAdmin(userId, request.getFamilyId())) {
+            throw new CustomException("Apenas administradores podem gerenciar orçamentos");
         }
         if (request.getBudgetType() == null) {
             throw new IllegalArgumentException("budgetType is required");
@@ -107,20 +120,36 @@ public class BudgetService {
     }
 
     @Transactional
-    public List<BudgetResponse> bulkUpsert(BudgetBulkRequest request) {
+    public List<BudgetResponse> bulkUpsert(BudgetBulkRequest request, String token) {
         if (request.getFamilyId() == null || request.getYear() == null || request.getMonth() == null) {
             throw new IllegalArgumentException("familyId, year and month are required");
         }
+
+        // Validate user is ADMIN
+        String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
+        Integer userId = jwtService.extractUserId(jwtToken);
+        if (userId == null) {
+            throw new CustomException("Token inválido");
+        }
+        if (!familyMemberService.isAdmin(userId, request.getFamilyId())) {
+            throw new CustomException("Apenas administradores podem gerenciar orçamentos");
+        }
+
         Integer familyId = request.getFamilyId();
         Integer year = request.getYear();
         Integer month = request.getMonth();
 
-        return request.getBudgets().stream().map(b -> {
+        List<BudgetResponse> responses = request.getBudgets().stream().map(b -> {
             b.setFamilyId(familyId);
             b.setYear(year);
             b.setMonth(month);
-            return create(b);
+            return create(b, token);
         }).collect(Collectors.toList());
+
+        // After saving all budgets, check all budgets for the month to ensure notifications are created
+        checkAllBudgetsForMonth(familyId, year, month);
+
+        return responses;
     }
 
     public List<BudgetResponse> list(Integer familyId, Integer year, Integer month) {
@@ -130,13 +159,34 @@ public class BudgetService {
             .collect(Collectors.toList());
     }
 
-    public void delete(Integer id, Integer familyId) {
+    public void delete(Integer id, Integer familyId, String token) {
+        // Validate user is ADMIN
+        String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
+        Integer userId = jwtService.extractUserId(jwtToken);
+        if (userId == null) {
+            throw new CustomException("Token inválido");
+        }
+        if (!familyMemberService.isAdmin(userId, familyId)) {
+            throw new CustomException("Apenas administradores podem gerenciar orçamentos");
+        }
+
         Budget budget = budgetRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Budget not found"));
         if (!budget.getFamilyId().equals(familyId)) {
             throw new IllegalArgumentException("Budget does not belong to this family");
         }
         budgetRepository.delete(budget);
+    }
+
+    /**
+     * Check all budgets for a family in a given month and create notifications if exceeded
+     * This is useful for periodic checks or when transactions are updated
+     */
+    public void checkAllBudgetsForMonth(Integer familyId, Integer year, Integer month) {
+        List<Budget> budgets = budgetRepository.findByFamilyIdAndYearAndMonth(familyId, year, month);
+        for (Budget budget : budgets) {
+            checkAndNotifyBudgetExceeded(budget);
+        }
     }
 
     private BudgetResponse toResponse(Budget budget) {

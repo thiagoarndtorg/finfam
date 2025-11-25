@@ -1,5 +1,6 @@
 package com.example.finfam.controller;
 
+import com.example.finfam.dto.request.AcceptInvitationRequest;
 import com.example.finfam.dto.request.InviteFamilyMemberRequest;
 import com.example.finfam.dto.request.UpdateMemberRoleRequest;
 import com.example.finfam.service.FamilyMemberService;
@@ -88,6 +89,18 @@ public class FamilyMemberController {
             @Parameter(description = "ID do membro") @PathVariable Integer memberId,
             @Parameter(description = "Token JWT de autorização") @RequestHeader("Authorization") String token) {
         familyMemberService.resendInvite(familyId, memberId, token);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/accept-invitation")
+    @Operation(summary = "Accept family invitation", description = "Accept a family invitation using the token from the email")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Invitation accepted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired token"),
+            @ApiResponse(responseCode = "404", description = "Member not found")
+    })
+    public ResponseEntity<Void> acceptInvitation(@RequestBody AcceptInvitationRequest request) {
+        familyMemberService.acceptInvitation(request.getToken());
         return ResponseEntity.ok().build();
     }
 }

@@ -6,6 +6,7 @@ public enum BankEnum {
     BRADESCO("237"),
     SANTANDER("033"),
     CAIXA("104"),
+    PICPAY("380"),
     UNKNOWN("000");
 
     private final String bankCode;
@@ -30,5 +31,19 @@ public enum BankEnum {
             }
         }
         return UNKNOWN;
+    }
+
+
+
+    public static String getBankColor(BankEnum bank) {
+        if (bank == PICPAY) {
+            return "#56d695";
+        }
+        if (bank == INTER) {
+            return "#ffad42";
+        }
+        else{
+            return "#808080";
+        }
     }
 }

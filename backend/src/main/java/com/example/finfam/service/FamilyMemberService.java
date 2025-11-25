@@ -185,6 +185,39 @@ public class FamilyMemberService {
         return familyMemberRepository.findByUserIdAndFamilyIdAndRole(userId, familyId, FamilyMember.Role.ADMIN).isPresent();
     }
 
+    @Transactional
+    public void acceptInvitation(String invitationToken) {
+        // Validate the invitation token
+        if (!jwtService.validateFamilyInvitationToken(invitationToken)) {
+            throw new CustomException("Token de convite inválido ou expirado", org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+
+        // Extract email and familyId from the token
+        String email = jwtService.extractEmailFromInvitationToken(invitationToken);
+        Integer familyId = jwtService.extractFamilyIdFromInvitationToken(invitationToken);
+
+        if (email == null || familyId == null) {
+            throw new CustomException("Token de convite inválido", org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+
+        // Find the user by email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException("Usuário não encontrado", org.springframework.http.HttpStatus.NOT_FOUND));
+
+        // Find the FamilyMember record
+        FamilyMember member = familyMemberRepository.findByUserIdAndFamilyId(user.getId(), familyId)
+                .orElseThrow(() -> new CustomException("Convite não encontrado", org.springframework.http.HttpStatus.NOT_FOUND));
+
+        // Verify the member's current status is PENDING
+        if (member.getStatus() != FamilyMember.Status.PENDING) {
+            throw new CustomException("Convite já foi aceito ou não está mais pendente", org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+
+        // Update the status to ACTIVE
+        member.setStatus(FamilyMember.Status.ACTIVE);
+        familyMemberRepository.save(member);
+    }
+
     private FamilyMemberResponse toResponse(FamilyMember member) {
         return FamilyMemberResponse.builder()
             .id(member.getId())

@@ -50,8 +50,8 @@ export class ApiClient {
       ...customHeaders,
     };
 
-    // Only add Authorization header if token exists and endpoint isn’t /register or /login
-    const isAuthEndpoint = endpoint.endsWith("/register") || endpoint.endsWith("/login");
+    // Only add Authorization header if token exists and endpoint isn't /register, /login, or /accept-invitation
+    const isAuthEndpoint = endpoint.endsWith("/register") || endpoint.endsWith("/login") || endpoint.endsWith("/accept-invitation");
     if (token && !isAuthEndpoint) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -117,8 +117,8 @@ export class ApiClient {
     return this.request<T>(endpoint, "PATCH", data, customHeaders);
   }
 
-  async delete<T>(endpoint: string, customHeaders?: Record<string, string>): Promise<T> {
-    return this.request<T>(endpoint, "DELETE", undefined, customHeaders);
+  async delete<T>(endpoint: string, data?: any, customHeaders?: Record<string, string>): Promise<T> {
+    return this.request<T>(endpoint, "DELETE", data, customHeaders);
   }
 }
 

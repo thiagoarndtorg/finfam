@@ -44,6 +44,10 @@ public class JwtService {
                 .sign(Algorithm.HMAC256(secret));
     }
 
+    /**
+     * Validates a JWT token by verifying both its signature and expiration.
+     * Returns false if the token is invalid, expired, or malformed.
+     */
     public boolean validateToken(String token) {
         try {
             JWT.require(Algorithm.HMAC256(secret)).build().verify(token);
@@ -89,6 +93,48 @@ public class JwtService {
             return expirationDate.before(new Date());
         } catch (Exception e) {
             return true;
+        }
+    }
+
+    public String extractEmailFromInvitationToken(String token) {
+        try {
+            DecodedJWT decodedJWT = JWT.decode(token);
+            return decodedJWT.getClaim("email").asString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public Integer extractFamilyIdFromInvitationToken(String token) {
+        try {
+            DecodedJWT decodedJWT = JWT.decode(token);
+            return decodedJWT.getClaim("familyId").asInt();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public boolean isFamilyInvitationToken(String token) {
+        try {
+            DecodedJWT decodedJWT = JWT.decode(token);
+            String tokenType = decodedJWT.getClaim("type").asString();
+            return "family_invitation".equals(tokenType);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean validateFamilyInvitationToken(String token) {
+        try {
+            if (!validateToken(token)) {
+                return false;
+            }
+            if (!isFamilyInvitationToken(token)) {
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

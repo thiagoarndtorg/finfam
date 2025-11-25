@@ -19,27 +19,16 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
+import { formatBrazilianCurrency } from "@/lib/utils";
 
 const COLORS = ["#0ea5e9", "#8b5cf6", "#f43f5e", "#10b981", "#f59e0b", "#6366f1", "#a855f7", "#22c55e"];
 
-export function ExpenseSummary({ accountsData }: { accountsData?: any }) {
+export function ExpenseSummary() {
   const [timeframe, setTimeframe] = useState("month");
-  const { filteredTransactions: contextTransactions, categories } = useFamily();
+  const { familyId, filteredTransactions: contextTransactions, categories } = useFamily();
 
-  // Build expenses per category from context transactions or accountsData
+  // Build expenses per category from context transactions
   const { chartData, totalExpenses } = useMemo(() => {
-    let expenseTx: any[] = [];
-
-    if (contextTransactions.length > 0) {
-      // Use context transactions
-      expenseTx = contextTransactions.filter((t: any) => t.transactionType === "EXPENSE");
-    } else {
-      // Fallback to accountsData
-      const accounts = accountsData?.accounts ?? [];
-      const txs = accounts.flatMap((a: any) => a.transactions || []);
-      expenseTx = txs.filter((t: any) => t.transactionType === "EXPENSE");
-    }
-
     // Filter by selected timeframe
     const now = new Date();
     let start: Date;
@@ -59,11 +48,14 @@ export function ExpenseSummary({ accountsData }: { accountsData?: any }) {
         break;
     }
 
-    expenseTx = expenseTx.filter((t: any) => {
-      const date = typeof t.transactionDate === "string" ? parseISO(t.transactionDate) : new Date(t.transactionDate);
-      if (Number.isNaN(date.getTime())) return false;
-      return isWithinInterval(date, { start, end: now });
-    });
+    // Use context transactions only - filter by type and timeframe
+    const expenseTx = contextTransactions
+      .filter((t: any) => t.transactionType === "EXPENSE")
+      .filter((t: any) => {
+        const date = typeof t.transactionDate === "string" ? parseISO(t.transactionDate) : new Date(t.transactionDate);
+        if (Number.isNaN(date.getTime())) return false;
+        return isWithinInterval(date, { start, end: now });
+      });
 
     // Group by category name
     const map = new Map<string, number>();
@@ -78,7 +70,7 @@ export function ExpenseSummary({ accountsData }: { accountsData?: any }) {
     const data = entries.map(([name, value], idx) => ({ name, value, color: COLORS[idx % COLORS.length] }));
 
     return { chartData: data, totalExpenses: total };
-  }, [accountsData, contextTransactions, timeframe]);
+  }, [familyId, contextTransactions, timeframe]);
 
   return (
     <Card>
@@ -97,10 +89,16 @@ export function ExpenseSummary({ accountsData }: { accountsData?: any }) {
         </Select>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold mb-4">R$ {totalExpenses.toFixed(2)}</div>
-        <p className="text-xs text-muted-foreground mb-6">Total expenses for {timeframe}</p>
+        {!familyId ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">No family selected</p>
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold mb-4">R$ {totalExpenses.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mb-6">Total expenses for {timeframe}</p>
 
-        <div className="h-[200px]">
+            <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -134,10 +132,12 @@ export function ExpenseSummary({ accountsData }: { accountsData?: any }) {
                 ></div>
                 <span className="text-sm">{category.name}</span>
               </div>
-              <span className="text-sm font-medium">R$ {Number(category.value).toFixed(2)}</span>
+              <span className="text-sm font-medium">R$ {formatBrazilianCurrency(category.value)}</span>
             </div>
           ))}
         </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

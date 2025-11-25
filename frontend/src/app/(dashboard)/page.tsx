@@ -17,16 +17,13 @@ import {
 import { useContext, useEffect, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { useFamily } from "@/contexts/family-context";
-import { useFamilyData } from "@/hooks/use-family-data";
 import { apiClient } from "@/middleware/api-client";
 
 export default function Dashboard() {
-  const { familyId, setFamilyId, familyData, isLoading, error } = useFamilyData();
+  const { familyId, familyData, isLoading, error, transactions, setTransactions, setCategories, refreshFamilyData } = useFamily();
   const bankStatement = useBankStatement();
   const { data: categoriesData, execute: fetchCategories } = useFamilyCategories();
   const { execute: autoSyncAccounts } = useAutoSyncAccounts();
-
-  const { transactions, setTransactions, setCategories, refreshFamilyData } = useFamily();
   
   // Track if auto-sync has been attempted to avoid running multiple times
   const hasAutoSynced = useRef(false);
@@ -35,13 +32,8 @@ export default function Dashboard() {
   console.log("Dashboard render - familyId:", familyId, "familyData:", familyData, "isLoading:", isLoading, "error:", error);
   console.log("User authenticated:", apiClient.isAuthenticated());
 
-  useEffect(() => {
-    setFamilyId(1);
-  }, []);
-
   // Auto-sync accounts when dashboard loads
   useEffect(() => {
-    console.log("HIHIIHA" + familyData);
     const performAutoSync = async () => {
       if (familyId) {
         try {
@@ -137,15 +129,15 @@ export default function Dashboard() {
           <AccountsOverview />
         </div>
         <div className="lg:col-span-1">
-          <ExpenseSummary accountsData={familyData || undefined} />
+          <ExpenseSummary />
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-1">
-        <RecentTransactions accountsData={familyData || undefined} />
+        <RecentTransactions />
       </div>
 
-      <FinancialMetrics accountsData={familyData || undefined} />
+      <FinancialMetrics />
     </div>
   );
 }

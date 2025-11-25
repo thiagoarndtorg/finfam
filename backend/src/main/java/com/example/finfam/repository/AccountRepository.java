@@ -15,4 +15,6 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     List<Account> findByFamilyId(Integer familyId);
 
+    List<Account> findByUserIdAndFamilyIdAndIsActive(Integer userId, Integer familyId, Boolean isActive);
+
 }

@@ -97,6 +97,9 @@ public class TransactionService {
         Category category = categoryRepo.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
 
+        boolean categoryChanged = request.getCategoryId() != null && 
+            (existing.getCategory() == null || !existing.getCategory().getId().equals(request.getCategoryId()));
+        
         if (request.getCategoryId() != null) existing.setCategory(category);
         if (request.getAmount() != null) existing.setAmount(BigDecimal.valueOf(request.getAmount()));
         if (request.getDescription() != null) existing.setDescription(request.getDescription());
@@ -104,7 +107,17 @@ public class TransactionService {
         if (request.getTransactionType() != null)
             existing.setTransactionType(TransactionType.valueOf(request.getTransactionType().toUpperCase()));
         Transaction updated = transactionRepo.save(existing);
+        
+        // Check budgets for this specific transaction
         checkBudgetsAfterTransaction(updated);
+        
+        // If category was assigned/changed, also check all budgets for the month to catch any exceedances
+        if (categoryChanged && updated.getTransactionType() == TransactionType.EXPENSE) {
+            int year = updated.getTransactionDate().getYear();
+            int month = updated.getTransactionDate().getMonthValue();
+            budgetService.checkAllBudgetsForMonth(updated.getFamilyId(), year, month);
+        }
+        
         return updated;
     }
 

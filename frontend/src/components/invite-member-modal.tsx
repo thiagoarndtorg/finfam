@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react"
 
 export function InviteMemberModal({ isOpen, onClose, onInvite }) {
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState("viewer")
+  const [role, setRole] = useState("member")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -25,7 +25,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }) {
 
       // Reset form
       setEmail("")
-      setRole("viewer")
+      setRole("member")
     } catch (error) {
       console.error("Error inviting member:", error)
     } finally {
@@ -36,7 +36,7 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }) {
   const handleClose = () => {
     if (!isLoading) {
       setEmail("")
-      setRole("viewer")
+      setRole("member")
       onClose()
     }
   }
@@ -66,9 +66,9 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }) {
             <Label>Role</Label>
             <RadioGroup value={role} onValueChange={setRole} disabled={isLoading}>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="viewer" id="viewer" />
-                <Label htmlFor="viewer" className="cursor-pointer">
-                  Viewer (can only view data)
+                <RadioGroupItem value="member" id="member" />
+                <Label htmlFor="member" className="cursor-pointer">
+                  Member (can view data but cannot manage budgets)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

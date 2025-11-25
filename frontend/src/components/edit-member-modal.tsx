@@ -50,9 +50,9 @@ export function EditMemberModal({ isOpen, onClose, member, onSave }) {
             <Label>Role</Label>
             <RadioGroup value={role} onValueChange={setRole} disabled={isLoading}>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="viewer" id="edit-viewer" />
-                <Label htmlFor="edit-viewer" className="cursor-pointer">
-                  Viewer (can only view data)
+                <RadioGroupItem value="member" id="edit-member" />
+                <Label htmlFor="edit-member" className="cursor-pointer">
+                  Member (can view data but cannot manage budgets)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

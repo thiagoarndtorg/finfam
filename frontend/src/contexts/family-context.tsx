@@ -1,12 +1,13 @@
 "use client";
 
-import { useFamilyFinancials, useAutoSyncAccountsSimple, useUserFamilies } from "@/hooks/use-api";
+import { useFamilyFinancials, useAutoSyncAccountsSimple, useUserFamilies, useCurrentUserRole, useFamilyMembers, useFamilyTransactions } from "@/hooks/use-api";
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from "react";
 import { Transaction } from "@/types/transaction-type";
 import { AccountsResponse } from "@/types/account-type";
 import toast from "react-hot-toast";
 import { apiClient } from "@/middleware/api-client";
 import { ApiError } from "@/middleware/api-client";
+import { getUserIdFromToken } from "@/lib/auth";
 
 // Define the shape of your family data
 type FamilyData = {
@@ -54,6 +55,8 @@ type FamilyContextType = {
   setFamilyMembers: (members: FamilyMember[]) => void;
   refreshNotifications: () => void;
   notificationRefreshTrigger: number;
+  currentUserRole: string | null;
+  isCurrentUserAdmin: () => boolean;
 };
 
 // Create the context with default values
@@ -76,8 +79,12 @@ export function FamilyProvider({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [notificationRefreshTrigger, setNotificationRefreshTrigger] = useState<number>(0);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   
   const { execute: getUserFamilies } = useUserFamilies();
+  const { execute: getCurrentUserRole } = useCurrentUserRole();
+  const { execute: loadFamilyMembers } = useFamilyMembers();
+  const { execute: loadFamilyTransactions } = useFamilyTransactions();
   
   // Compute filtered transactions based on selected users and categories
   const filteredTransactions = useMemo(() => {
@@ -104,12 +111,24 @@ export function FamilyProvider({
   const { execute: autoSyncAccounts } = useAutoSyncAccountsSimple();
 
   // Função para trocar de família
-  const switchFamily = async (newFamilyId: number) => {
+  const switchFamily = (newFamilyId: number) => {
     setFamilyId(newFamilyId);
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedFamilyId", newFamilyId.toString());
     }
+    
+    // Reset all data for complete refresh
+    setFamilyMembers([]);
+    setTransactions([]);
+    setCategories([]);
+    setCurrentUserRole(null);
+    
     // Refresh will happen automatically via useEffect when familyId changes
+  };
+
+  // Function to check if current user is admin
+  const isCurrentUserAdmin = () => {
+    return currentUserRole === 'ADMIN';
   };
 
   // Função para atualizar dados da família com auto-sync
@@ -244,6 +263,98 @@ export function FamilyProvider({
     getFamilyFinancials();
   }, [familyId, execute, autoSyncAccounts]);
 
+  // Load current user role when familyId changes
+  useEffect(() => {
+    const loadUserRole = async () => {
+      if (familyId == null) {
+        return;
+      }
+
+      if (!apiClient.isAuthenticated()) {
+        return;
+      }
+
+      const userId = getUserIdFromToken();
+      if (!userId) {
+        return;
+      }
+
+      try {
+        const role = await getCurrentUserRole(familyId, userId, { suppressToast: true });
+        setCurrentUserRole(role);
+      } catch (error) {
+        console.error("Error loading user role:", error);
+        setCurrentUserRole(null);
+      }
+    };
+
+    loadUserRole();
+  }, [familyId, getCurrentUserRole]);
+
+  // Load family members when familyId changes
+  useEffect(() => {
+    const loadMembers = async () => {
+      if (familyId == null) {
+        return;
+      }
+
+      if (!apiClient.isAuthenticated()) {
+        return;
+      }
+
+      try {
+        const members = await loadFamilyMembers(familyId, { suppressToast: true });
+        if (members) {
+          setFamilyMembers(members);
+        }
+      } catch (error) {
+        console.error("Error loading family members:", error);
+        setFamilyMembers([]);
+      }
+    };
+
+    loadMembers();
+  }, [familyId, loadFamilyMembers]);
+
+  // Load transactions when familyId changes
+  useEffect(() => {
+    const loadTransactions = async () => {
+      if (familyId == null) {
+        return;
+      }
+
+      if (!apiClient.isAuthenticated()) {
+        return;
+      }
+
+      try {
+        const transactionsData = await loadFamilyTransactions(familyId, { suppressToast: true });
+        if (transactionsData) {
+          setTransactions(transactionsData);
+        }
+      } catch (error) {
+        console.error("Error loading transactions:", error);
+        setTransactions([]);
+      }
+    };
+
+    loadTransactions();
+  }, [familyId, loadFamilyTransactions]);
+
+  // Refresh budgets when familyId changes (trigger notification refresh)
+  useEffect(() => {
+    if (familyId == null) {
+      return;
+    }
+
+    if (!apiClient.isAuthenticated()) {
+      return;
+    }
+
+    // Trigger notification refresh when family changes
+    refreshNotifications();
+  }, [familyId]);
+
   return (
     <FamilyContext.Provider
       value={{ 
@@ -268,7 +379,9 @@ export function FamilyProvider({
         familyMembers,
         setFamilyMembers,
         refreshNotifications,
-        notificationRefreshTrigger
+        notificationRefreshTrigger,
+        currentUserRole,
+        isCurrentUserAdmin
       }}
     >
       {children}

@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useFamilyNotifications } from "@/hooks/use-api"
+import { useFamilyNotifications, useDeleteNotification } from "@/hooks/use-api"
 import { useFamily } from "@/contexts/family-context"
 import { format } from "date-fns"
 import { Notification } from "@/types/notification-type"
+import toast from "react-hot-toast"
 
 export function Notifications() {
   const [isOpen, setIsOpen] = useState(false)
-  const { familyId, notificationRefreshTrigger } = useFamily()
+  const { familyId, notificationRefreshTrigger, refreshNotifications } = useFamily()
   const { data: notifications, isLoading, execute } = useFamilyNotifications()
+  const { execute: deleteNotification } = useDeleteNotification()
   const [localNotifications, setLocalNotifications] = useState<Notification[]>([])
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set())
 
   // Helper function to map notification type to icon and color
   const getNotificationDisplay = (notificationType: string): { icon: LucideIcon; color: string } => {
@@ -30,6 +33,49 @@ export function Notifications() {
         return { icon: Gift, color: 'text-purple-500' }
       default:
         return { icon: Info, color: 'text-blue-500' }
+    }
+  }
+
+  // Handle delete notification
+  const handleDeleteNotification = async (notificationId: number) => {
+    if (!familyId) {
+      toast.error("Family ID is required")
+      return
+    }
+
+    setDeletingIds(prev => new Set(prev).add(notificationId))
+
+    try {
+      await deleteNotification({ id: notificationId, familyId }, { suppressToast: true })
+      
+      // Optimistically update local state
+      setLocalNotifications(prev => prev.filter(n => n.id !== notificationId))
+      
+      // Refresh notifications to ensure consistency
+      if (refreshNotifications) {
+        refreshNotifications()
+      }
+      
+      toast.success("Notificação removida")
+    } catch (error: any) {
+      console.error("Error deleting notification:", error)
+      toast.error(error?.message || "Erro ao remover notificação")
+      
+      // Refresh to get the correct state
+      try {
+        const data = await execute(familyId, { suppressToast: true })
+        if (data) {
+          setLocalNotifications(data)
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing notifications:", refreshError)
+      }
+    } finally {
+      setDeletingIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(notificationId)
+        return newSet
+      })
     }
   }
 
@@ -192,8 +238,10 @@ export function Notifications() {
                     const formattedMessage = formatNotificationMessage(notification)
                     const formattedDate = format(new Date(notification.createdAt), 'dd/MM/yyyy HH:mm')
                     
+                    const isDeleting = deletingIds.has(notification.id)
+                    
                     return (
-                      <Card key={notification.id} className="mb-4 last:mb-0 border shadow-sm">
+                      <Card key={notification.id} className="mb-4 last:mb-0 border shadow-sm relative group">
                         <CardContent className="p-4">
                           <div className="flex items-start space-x-4">
                             <div className={`${color} p-2 rounded-full bg-opacity-10`}>
@@ -204,6 +252,16 @@ export function Notifications() {
                               <p className="text-sm text-muted-foreground">{formattedMessage}</p>
                               <p className="text-xs text-muted-foreground">{formattedDate}</p>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleDeleteNotification(notification.id)}
+                              disabled={isDeleting}
+                              aria-label="Delete notification"
+                            >
+                              <X className="h-4 w-4"></X>
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>

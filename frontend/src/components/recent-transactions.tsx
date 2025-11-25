@@ -43,12 +43,13 @@ import { useFamilyFinancials, useUpdateTransaction, useDeleteTransaction } from 
 // Start with empty; will load from backend
 const initialTransactions: any[] = [];
 
-export function RecentTransactions({ accountsData }: { accountsData?: any }) {
+export function RecentTransactions() {
   const {
     familyId,
     filteredTransactions: contextTransactions,
     categories,
     updateTransaction,
+    familyData,
     refreshFamilyData,
   } = useFamily();
   const { data, execute } = useFamilyFinancials();
@@ -62,26 +63,29 @@ export function RecentTransactions({ accountsData }: { accountsData?: any }) {
   const [accountFilter, setAccountFilter] = useState("all");
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [deletingTransaction, setDeletingTransaction] = useState(null);
-
-  // // Fetch accounts+transactions once familyId is available
-  // useEffect(() => {
-  //   if (!accountsData && familyId) {
-  //     execute(familyId);
-  //   }
-  // }, [familyId, accountsData]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Build a map of accountId -> accountName for labeling
   const accountIdToName = useMemo(() => {
     const map = new Map<number, string>();
-    const accounts = accountsData?.accounts ?? data?.accounts ?? [];
+    const accounts = familyData?.accounts ?? [];
     accounts.forEach((acc: any) => map.set(acc.id, acc.name));
     return map;
-  }, [data, accountsData]);
+  }, [familyData]);
 
-  // Use context transactions if available, otherwise normalize from accountsData
+  // Use context transactions and normalize them
+  // This effect normalizes transactions from context for display
   useEffect(() => {
+    if (!familyId) {
+      setTransactions([]);
+      setIsLoadingData(false);
+      return;
+    }
+
+    setIsLoadingData(true);
+    
     if (contextTransactions.length > 0) {
-      // Use transactions from context
+      // Use transactions from context - this is the single source of truth
       const normalized = contextTransactions.map((t: any) => {
         return {
           id: String(t.id),
@@ -97,28 +101,11 @@ export function RecentTransactions({ accountsData }: { accountsData?: any }) {
       });
       setTransactions(normalized);
     } else {
-      // Fallback to accountsData
-      const accounts = accountsData?.accounts ?? data?.accounts ?? [];
-      if (!accounts.length) return;
-
-      const normalized = accounts.flatMap((acc: any) =>
-        (acc.transactions || []).map((t: any) => {
-          return {
-            id: String(t.id),
-            description: t.description,
-            amount: Math.round(Number(t.amount) * 100), // convert to cents
-            date: t.transactionDate,
-            category: t.category?.name || "Uncategorized",
-            categoryId: t.category?.id,
-            categoryObject: t.category, // Keep full category object for editing
-            account: accountIdToName.get(t.accountId) || acc.name || `Account ${t.accountId}`,
-            type: t.transactionType === "INCOME" ? "income" : "expense",
-          };
-        })
-      );
-      setTransactions(normalized);
+      setTransactions([]);
     }
-  }, [data, accountsData, accountIdToName, contextTransactions]);
+    
+    setIsLoadingData(false);
+  }, [familyId, contextTransactions, accountIdToName]);
 
   // Get unique categories and accounts for filters
   const filterCategories = ["all", ...new Set(transactions.map((t) => t.category))];
@@ -164,39 +151,37 @@ export function RecentTransactions({ accountsData }: { accountsData?: any }) {
 
   // Handle transaction edit
   const handleEditTransaction = async (updatedTransaction: any) => {
-    try {
-      // Update via API
-      await updateTransactionAPI({
-        id: Number(updatedTransaction.id),
-        familyId,
-        categoryId: updatedTransaction.categoryId,
-        amount: updatedTransaction.amount / 100, // convert from cents
-        description: updatedTransaction.description,
-        transactionDate: updatedTransaction.date,
-        transactionType: updatedTransaction.type.toUpperCase(),
-      });
+    // Normalize amount: API expects positive amount with transactionType
+    const amountValue = Math.abs(updatedTransaction.amount) / 100;
+    
+    // Update via API and capture the response
+    const apiResponse = await updateTransactionAPI({
+      id: Number(updatedTransaction.id),
+      familyId,
+      categoryId: updatedTransaction.categoryId,
+      amount: amountValue,
+      description: updatedTransaction.description,
+      transactionDate: updatedTransaction.date,
+      transactionType: updatedTransaction.type.toUpperCase(),
+    });
 
-      // Update context
-      updateTransaction(Number(updatedTransaction.id), {
-        categoryId: updatedTransaction.categoryId,
-        amount: updatedTransaction.amount / 100,
-        description: updatedTransaction.description,
-        transactionDate: updatedTransaction.date,
-        transactionType: updatedTransaction.type.toUpperCase(),
-      });
-
-      // Update local state
-      setTransactions((prev) =>
-        prev.map((t) => (t.id === updatedTransaction.id ? updatedTransaction : t))
-      );
-
-      // Refresh family data to get latest balance and transactions
-      await refreshFamilyData();
-
-      setEditingTransaction(null);
-    } catch (error) {
-      console.error("Failed to update transaction:", error);
+    if (!apiResponse) {
+      throw new Error("Failed to update transaction: API returned no response");
     }
+
+    // Update context with API response, including the full category object
+    // Find current transaction from context to preserve category if API doesn't return it
+    const currentTransaction = contextTransactions.find((t: any) => t.id === Number(updatedTransaction.id));
+    updateTransaction(Number(updatedTransaction.id), {
+      category: apiResponse.category || currentTransaction?.category || updatedTransaction.categoryObject,
+      categoryId: apiResponse.category?.id || updatedTransaction.categoryId,
+      amount: apiResponse.amount || amountValue,
+      description: apiResponse.description || updatedTransaction.description,
+      transactionDate: apiResponse.transactionDate || updatedTransaction.date,
+      transactionType: apiResponse.transactionType || updatedTransaction.type.toUpperCase(),
+    });
+
+    setEditingTransaction(null);
   };
 
   // Handle transaction delete
@@ -263,51 +248,57 @@ export function RecentTransactions({ accountsData }: { accountsData?: any }) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">
-                  <Button variant="ghost" className="p-0" onClick={() => handleSort("description")}>
-                    Description
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="p-0" onClick={() => handleSort("category")}>
-                    Category
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="p-0" onClick={() => handleSort("account")}>
-                    Account
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" className="p-0" onClick={() => handleSort("date")}>
-                    Date
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-right">
-                  <Button variant="ghost" className="p-0" onClick={() => handleSort("amount")}>
-                    Amount
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.length === 0 ? (
+        {isLoadingData ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="text-sm text-muted-foreground mt-2">Loading transactions...</p>
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                    No transactions found
-                  </TableCell>
+                  <TableHead className="w-[200px]">
+                    <Button variant="ghost" className="p-0" onClick={() => handleSort("description")}>
+                      Description
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="p-0" onClick={() => handleSort("category")}>
+                      Category
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="p-0" onClick={() => handleSort("account")}>
+                      Account
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button variant="ghost" className="p-0" onClick={() => handleSort("date")}>
+                      Date
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Button variant="ghost" className="p-0" onClick={() => handleSort("amount")}>
+                      Amount
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ) : (
+              </TableHeader>
+              <TableBody>
+                {filteredTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                      No transactions found
+                    </TableCell>
+                  </TableRow>
+                ) : (
                 filteredTransactions.map((transaction) => {
                   console.log(transaction);
                   return (
@@ -356,10 +347,11 @@ export function RecentTransactions({ accountsData }: { accountsData?: any }) {
                     </TableRow>
                   );
                 })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
 
       {editingTransaction && (

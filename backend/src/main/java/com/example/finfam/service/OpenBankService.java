@@ -170,6 +170,49 @@ public class OpenBankService {
         return allTransactions;
     }
 
+    public OpenBankTransactionResponse getTransaction(
+            String accountId,
+            String apiKey,
+            BankEnum bankName
+    ) throws IOException {
+
+        HttpUrl url = HttpUrl.parse(apiUrl + "/transactions").newBuilder()
+                .addQueryParameter("accountId", accountId)
+                .addQueryParameter("pageSize", "1")  // only 1 result
+                .addQueryParameter("page", "1")
+                .build();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .header("X-API-KEY", apiKey)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Failed to fetch transaction: " + response);
+            }
+
+            JsonNode json = mapper.readTree(response.body().string());
+            JsonNode results = json.get("results");
+
+            if (results == null || !results.elements().hasNext()) {
+                return null; // or throw
+            }
+
+            JsonNode node = results.get(0); // FIRST transaction
+
+            return new OpenBankTransactionResponse(
+                    node.get("id").asText(),
+                    node.get("date").asText(),
+                    node.get("description").asText(),
+                    node.get("amount").asDouble(),
+                    resolve(BigDecimal.valueOf(node.get("amount").asDouble())),
+                    bankName
+            );
+        }
+    }
+
+
     // Sync Bank Statement and Connect Account
 
     public OpenBankStatementResponse syncBankStatement(OpenBankFetchRequest request, String token) throws IOException {
@@ -316,31 +359,72 @@ public class OpenBankService {
         return syncResults;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+    public void triggerPluggySync(String itemId, String apiKey) throws IOException {
+        HttpUrl url = HttpUrl.parse("https://api.pluggy.ai/items/" + itemId);
+
+        RequestBody body = RequestBody.create(
+                "{}", MediaType.parse("application/json")); // empty JSON → just trigger sync
+
+        Request request = new Request.Builder()
+                .url(url)
+                .patch(body)
+                .header("X-API-KEY", apiKey)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Failed to trigger Pluggy sync: " + response);
+            }
+
+            log.info("Pluggy sync triggered successfully for itemId={}", itemId);
+        }
+    }
+
+
+
+
     // Sync a single account by accountId
     public OpenBankStatementResponse syncSingleAccount(Integer accountId, Integer userId, Integer familyId) throws IOException {
-        // Retrieve the account using accountService
+        // Retrieve the account
         Account account = accountService.getAccountsByUserAndFamily(userId, familyId).stream()
                 .filter(acc -> acc.getId().equals(accountId))
                 .findFirst()
-                .orElseThrow(() -> new CustomException("Account not found or does not belong to user/family"));
+                .orElseThrow(() -> new CustomException("Account not found or does not belong to user/family", org.springframework.http.HttpStatus.NOT_FOUND));
 
         // Validate ownership
         if (!account.getUserId().equals(userId) || !account.getFamilyId().equals(familyId)) {
-            throw new CustomException("Account does not belong to user/family");
+            throw new CustomException("Account does not belong to user/family", org.springframework.http.HttpStatus.FORBIDDEN);
         }
 
-        // Extract itemId from account
         String itemId = account.getItemId();
         if (itemId == null || itemId.trim().isEmpty()) {
             throw new CustomException("Account does not have a valid itemId");
         }
 
         try {
-            // Get API key
+            // API key
             String apiKey = getApiKey();
-
-            // Get current account data from Pluggy
             String cleanItemId = itemId.replaceAll("\"", "");
+
+            // 🔥 **STEP 1 — Trigger manual Pluggy sync**
+            triggerPluggySync(cleanItemId, apiKey);
+
+            // 🔥 (Optional) you can wait a bit for the sync to complete:
+             Thread.sleep(5000);
+
+            // 🔥 **STEP 2 — Fetch accounts from Pluggy**
             List<OpenBankAccountResponse> pluggyAccounts = getAccounts(cleanItemId, apiKey);
             if (pluggyAccounts.isEmpty()) {
                 throw new CustomException("No accounts found in Pluggy for this itemId. Please reconnect your bank account.");
@@ -348,37 +432,44 @@ public class OpenBankService {
 
             BankEnum bankEnum = pluggyAccounts.get(0).getBankName();
 
-            // Calculate new total balance and fetch transactions
             double totalBalance = 0.00;
             List<OpenBankTransactionResponse> allTransactions = new ArrayList<>();
 
+            // 🔥 **STEP 3 — Fetch transactions from Pluggy**
             for (OpenBankAccountResponse pluggyAccount : pluggyAccounts) {
                 allTransactions.addAll(getTransactions(pluggyAccount.getId(), apiKey, bankEnum));
             }
-            totalBalance = totalBalance + pluggyAccounts.get(0).getBalance();
+            totalBalance += pluggyAccounts.get(0).getBalance();
 
-            // Update account balance
+            // 🔥 **STEP 4 — Update account**
             account.setBalance(new BigDecimal(totalBalance));
             accountService.updateAccount(account);
 
-            // Convert transactions to DTOs and save (deduplication handled via pluggyId)
-            var transactions = TransactionDTO.convertToTransactionDTOs(allTransactions, account.getId(), account.getName(), userId, familyId);
-            log.info("Fetched {} transactions from Pluggy for accountId={} (bank={})", allTransactions.size(), account.getId(), bankEnum);
+            // Save transactions
+            var transactions = TransactionDTO.convertToTransactionDTOs(
+                    allTransactions, account.getId(), account.getName(), userId, familyId);
+
+            log.info("Fetched {} transactions from Pluggy for accountId={} (bank={})",
+                    allTransactions.size(), account.getId(), bankEnum);
+
             transactionService.saveTransactions(transactions);
 
-            // Create and return response
-            OpenBankStatementResponse response = new OpenBankStatementResponse(cleanItemId, bankEnum, account.getBalance(), allTransactions);
+            // 🔥 **STEP 5 — Build response**
+            OpenBankStatementResponse response = new OpenBankStatementResponse(
+                    cleanItemId, bankEnum, account.getBalance(), allTransactions);
+
             response.getTransactions().sort(Comparator.comparing(OpenBankTransactionResponse::getDate).reversed());
+
             return response;
 
         } catch (IOException e) {
             log.error("Error syncing account {}: {}", accountId, e.getMessage());
-            throw new CustomException("Failed to sync account. Please try again or reconnect your bank account if the problem persists.");
+            throw new CustomException("Failed to sync account. Please try again or reconnect your bank.");
         } catch (CustomException e) {
             throw e;
         } catch (Exception e) {
             log.error("Unexpected error syncing account {}: {}", accountId, e.getMessage());
-            throw new CustomException("An unexpected error occurred while syncing the account. Please try again.");
+            throw new CustomException("Unexpected error while syncing account. Try again.");
         }
     }
 }

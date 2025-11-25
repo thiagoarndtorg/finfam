@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .csrf().disable()
                 .cors().and()
                 .authorizeHttpRequests()
-                .requestMatchers("/api/register", "/api/login").permitAll()
+                .requestMatchers("/api/register", "/api/login", "/api/family/accept-invitation").permitAll()
                 .requestMatchers(
                 "/v3/api-docs/**",
                 "/swagger-ui/**",

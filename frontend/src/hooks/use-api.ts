@@ -70,7 +70,7 @@ export function useApi<TData, TArgs extends any[]>(
           toast.error(apiError.message || "Something went wrong!");
         }
 
-        return null;
+        throw apiError;
       }
     },
     [apiMethod]
@@ -305,6 +305,32 @@ export function useDeleteTransaction() {
   return useApi<void, [{ id: number; familyId: number }]>(apiMethod);
 }
 
+// Hook para desconectar conta
+export function useDisconnectAccount() {
+  const apiMethod = useCallback(
+    ({ accountId, familyId }: { accountId: number; familyId: number }) =>
+      apiClient.delete(`/accounts/${accountId}?familyId=${familyId}`).then(() => {
+        console.log("Disconnect account response: success");
+        return undefined;
+      }),
+    []
+  );
+  return useApi<void, [{ accountId: number; familyId: number }]>(apiMethod);
+}
+
+// Hook para desconectar todas as contas
+export function useDisconnectAllAccounts() {
+  const apiMethod = useCallback(
+    ({ familyId }: { familyId: number }) =>
+      apiClient.delete(`/accounts/disconnect-all?familyId=${familyId}`).then((res: any) => {
+        console.log("Disconnect all accounts response:", res);
+        return res;
+      }),
+    []
+  );
+  return useApi<{ count: number }, [{ familyId: number }]>(apiMethod);
+}
+
 // Hook para buscar transações por família
 export function useFamilyTransactions() {
   const apiMethod = useCallback(
@@ -407,6 +433,18 @@ export function useFamilyNotifications() {
   return useApi<Array<Notification>, [number]>(apiMethod);
 }
 
+export function useDeleteNotification() {
+  const apiMethod = useCallback(
+    ({ id, familyId }: { id: number; familyId: number }) =>
+      apiClient.delete(`/notifications/${id}?familyId=${familyId}`).then(() => {
+        console.log("Delete notification response: success");
+        return undefined;
+      }),
+    []
+  );
+  return useApi<void, [{ id: number; familyId: number }]>(apiMethod);
+}
+
 // ==================== Family Members Hooks ====================
 
 export function useUserFamilies() {
@@ -479,4 +517,28 @@ export function useResendInvite() {
     []
   );
   return useApi<void, [{familyId: number; memberId: number}]>(apiMethod);
+}
+
+export function useCurrentUserRole() {
+  const apiMethod = useCallback(
+    (familyId: number, userId: number) =>
+      apiClient.get(`/family/${familyId}/members`).then((res: any) => {
+        const currentMember = res.find((m: any) => m.userId === userId);
+        return currentMember?.role || null;
+      }),
+    []
+  );
+  return useApi<string | null, [number, number]>(apiMethod);
+}
+
+export function useAcceptInvitation() {
+  const apiMethod = useCallback(
+    ({ token }: { token: string }) =>
+      apiClient.post("/family/accept-invitation", { token }).then((res: any) => {
+        console.log("Accept invitation response:", res);
+        return res;
+      }),
+    []
+  );
+  return useApi<void, [{ token: string }]>(apiMethod);
 }

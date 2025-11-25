@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useFamily } from "@/contexts/family-context";
-import { useFamilyCategories, useUpdateTransaction } from "@/hooks/use-api";
+import { useFamilyCategories } from "@/hooks/use-api";
 import toast from "react-hot-toast";
 
 interface EditTransactionModalProps {
@@ -33,9 +33,8 @@ export function EditTransactionModal({
   transaction,
   onSave,
 }: EditTransactionModalProps) {
-  const { familyId, categories: contextCategories, updateTransaction, refreshFamilyData } = useFamily();
+  const { familyId, categories: contextCategories } = useFamily();
   const { data: apiCategories, execute: fetchCategories } = useFamilyCategories();
-  const { execute: updateTransactionAPI } = useUpdateTransaction();
 
   // Mock categories for now (fallback until API wiring/loading is added)
   const mockCategories = [
@@ -62,7 +61,7 @@ export function EditTransactionModal({
     if (isOpen && familyId) {
       fetchCategories(familyId);
     }
-  }, []);
+  }, [isOpen, familyId, fetchCategories]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,27 +71,8 @@ export function EditTransactionModal({
       // Convert amount to cents for storage
       const amountInCents = Math.round(Number.parseFloat(amount) * 100);
 
-      // Call API to update transaction
-      await updateTransactionAPI({
-        id: Number(transaction.id),
-        familyId,
-        categoryId: Number(categoryId),
-        amount: amountInCents / 100, // API expects amount in reais, not cents
-        description,
-        transactionDate: date.toISOString().split("T")[0],
-        transactionType: type.toUpperCase()
-      });
-
-      // Update context
-      updateTransaction(Number(transaction.id), {
-        categoryId: Number(categoryId),
-        amount: amountInCents / 100,
-        description,
-        transactionDate: date.toISOString().split("T")[0],
-        transactionType: type.toUpperCase()
-      });
-
-      // Call the onSave callback with updated transaction
+      // Build the updated transaction object with form data
+      // The parent component (RecentTransactions) will handle the API call
       const updatedTransaction = {
         ...transaction,
         description,
@@ -103,10 +83,8 @@ export function EditTransactionModal({
         type,
       };
 
-      onSave(updatedTransaction);
-      
-      // Refresh family data to get latest balance and transactions
-      await refreshFamilyData();
+      // Wait for parent to complete API call before showing success
+      await onSave(updatedTransaction);
       
       toast.success("Transação atualizada com sucesso!");
     } catch (error) {

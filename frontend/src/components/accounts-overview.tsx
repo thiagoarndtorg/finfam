@@ -10,6 +10,7 @@ import { AddExpenseModal } from "./add-expense-modal";
 import { useFamilyAccountsTemp, useSyncAccount } from "@/hooks/use-api";
 import { useFamily } from "@/contexts/family-context";
 import { Account } from "@/types/account-type";
+import { getBankColor, formatBrazilianCurrency } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 export function AccountsOverview() {
@@ -33,7 +34,14 @@ export function AccountsOverview() {
   // Atualizar accounts quando accountsData mudar
   useEffect(() => {
     if (accountsData?.accounts) {
-      setAccounts(accountsData.accounts);
+      // Map accounts and set color based on bankEnum
+      const accountsWithColor: Account[] = accountsData.accounts.map((account: any) => {
+        return {
+          ...account,
+          color: account.color || getBankColor(account.bankEnum),
+        } as Account;
+      });
+      setAccounts(accountsWithColor);
     }
   }, [accountsData]);
 
@@ -44,31 +52,7 @@ export function AccountsOverview() {
     setIsAddAccountModalOpen(false);
   };
 
-  const handleTransfer = async (amount: number, fromAccount: number, toAccount: number) => {
-    // Note: In a real app, you would call the API here to create the transfer transaction
-    // For now, we'll just update local state and refresh data
-    
-    setAccounts(
-      accounts.map((account) => {
-        if (account.id === fromAccount) {
-          return { ...account, balance: account.balance - amount };
-        }
-        if (account.id === toAccount) {
-          return { ...account, balance: account.balance + amount };
-        }
-        return account;
-      })
-    );
-    
-    // Refresh family data to get latest balance and transactions from backend
-    try {
-      await refreshFamilyData();
-    } catch (error) {
-      console.error("Failed to refresh family data after transfer:", error);
-    }
-    
-    setIsTransferModalOpen(false);
-  };
+ 
 
   const handleAddExpense = async (amount: number, account: number, category: string) => {
     // Note: In a real app, you would call the API here to create the expense transaction
@@ -157,7 +141,7 @@ export function AccountsOverview() {
           </div>
         ) : (
           <>
-            <div className="text-2xl font-bold mb-4">R$ {totalBalance.toFixed(2)}</div>
+            <div className="text-2xl font-bold mb-4">{formatBrazilianCurrency(totalBalance)}</div>
             <p className="text-xs text-muted-foreground mb-6">Total balance across all accounts</p>
             <div className="space-y-4 mb-6">
               {accounts.length === 0 ? (
@@ -168,12 +152,18 @@ export function AccountsOverview() {
                   </p>
                 </div>
               ) : (
-                accounts.map((account) => (
+                accounts.map((account) => { 
+                
+                  console.log(account)
+                  return (
+                  
                   <div key={account.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: account.color }}
+                        style={{ 
+                          backgroundColor: account.color || getBankColor((account as any).bankEnum)
+                        }}
                         aria-hidden="true"
                       ></div>
                       <div>
@@ -184,7 +174,7 @@ export function AccountsOverview() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">R$ {account.balance.toFixed(2)}</span>
+                      <span className="font-medium">{formatBrazilianCurrency(account.balance)}</span>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -197,19 +187,12 @@ export function AccountsOverview() {
                       </Button>
                     </div>
                   </div>
-                ))
+                )})
               )}
             </div>
           </>
         )}
-        <div className="grid grid-cols-2 gap-2">
-          <Button size="sm" onClick={() => setIsAddExpenseModalOpen(true)}>
-            <CreditCard className="mr-2 h-4 w-4" /> Add Expense
-          </Button>
-          <Button size="sm" variant="outline">
-            <MoreHorizontal className="mr-2 h-4 w-4" /> More
-          </Button>
-        </div>
+         
       </CardContent>
 
       <AddAccountModal
@@ -218,12 +201,7 @@ export function AccountsOverview() {
         onAddAccount={handleAddAccount}
       />
 
-      <TransferModal
-        isOpen={isTransferModalOpen}
-        onClose={() => setIsTransferModalOpen(false)}
-        onTransfer={handleTransfer}
-        accounts={accounts}
-      />
+
 
       <AddExpenseModal
         isOpen={isAddExpenseModalOpen}

@@ -1,12 +1,22 @@
 package com.example.finfam.exception;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
 public class CustomException extends RuntimeException {
-        public CustomException(String message) {
-            super(message);
-        }
+    private final HttpStatus httpStatus;
+
+    public CustomException(String message) {
+        super(message);
+        this.httpStatus = HttpStatus.BAD_REQUEST;
     }
+
+    public CustomException(String message, HttpStatus httpStatus) {
+        super(message);
+        this.httpStatus = httpStatus;
+    }
+
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
+    }
+}
 

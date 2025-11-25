@@ -39,7 +39,7 @@ export default function FamilyMembersPage() {
   }, [membersData]);
 
   const toBackendRole = (role) => {
-    if (role === "viewer") return "MEMBER";
+    if (role === "member") return "MEMBER";
     if (role === "admin") return "ADMIN";
     return role.toUpperCase();
   }
@@ -83,7 +83,7 @@ export default function FamilyMembersPage() {
   }
 
   const mapRole = (role) => {
-    return role === "ADMIN" ? "admin" : "viewer";
+    return role === "ADMIN" ? "admin" : "member";
   }
 
   if (isLoadingMembers) {
@@ -144,7 +144,7 @@ export default function FamilyMembersPage() {
                         ) : (
                           <>
                             <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span>Viewer</span>
+                            <span>Member</span>
                           </>
                         )}
                       </div>

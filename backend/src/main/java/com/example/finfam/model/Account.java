@@ -1,9 +1,11 @@
 package com.example.finfam.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -23,6 +25,11 @@ public class Account {
     @Column(name = "bank_id")
     private Integer bankId;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "bank_id", insertable = false, updatable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Bank bank;
+
     @Column(name = "item_id")
     private String itemId;
 
@@ -37,6 +44,10 @@ public class Account {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     @OneToMany(mappedBy = "accountId")
+    @JsonIgnoreProperties({"accountId", "account"})
     private List<Transaction> transactions;
 }

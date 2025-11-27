@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   workflow_run:
-    workflows: ["Backend SonarQube", "Frontend SonarQube"]
+    workflows: ["Backend SonarQube"]
     types:
       - completed
 
@@ -12,10 +12,23 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Deploy with Docker Compose
+ 
+      - name: Build Backend
+        working-directory: backend
         run: |
-          cd ~/finfam
+          chmod +x gradlew
+          ./gradlew build
+
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy Docker Compose
+        run: |
+          cd $GITHUB_WORKSPACE
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans

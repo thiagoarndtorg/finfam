@@ -22,7 +22,6 @@ Thumbs.db
 .idea/
 *.iml
 *.class
-*.jar
 *.war
 *.ear
 *.db
@@ -64,9 +63,6 @@ backend/.gradle/
 backend/.mvn/
 backend/mvnw
 backend/mvnw.cmd
-backend/gradle/
-backend/gradlew
-backend/gradlew.bat
 backend/logs/
 backend/tmp/
 backend/*.iml

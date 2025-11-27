@@ -7,6 +7,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+
   backend:
     runs-on: self-hosted
     steps:
@@ -31,17 +32,21 @@ jobs:
           chmod +x gradlew
           ./gradlew clean build -x test
 
+      - name: Upload backend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/build/libs/*.jar
+
 
   frontend:
     runs-on: self-hosted
     needs: backend
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Remove corrupted cache
-        run: |
-          rm -rf frontend/node_modules
+        run: rm -rf frontend/node_modules
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v3
@@ -51,7 +56,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install
@@ -60,19 +65,33 @@ jobs:
 
       - name: Build
         working-directory: frontend
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm build
 
-
+      - name: Upload frontend build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/.next
 
 
   deploy:
     runs-on: self-hosted
     needs: [backend, frontend]
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
       
+      - name: Move build artifacts to project folders
+        run: |
+          mv backend-build/*.jar backend/app.jar
+          rm -rf frontend/.next
+          mv frontend-build/.next frontend/.next
+
       - name: Create .env file
         run: |
           cat <<EOF > .env
@@ -88,11 +107,11 @@ jobs:
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           EOF
-          
+
       - name: Prune old docker images
         run: docker image prune -f
 
       - name: Deploy with Docker Compose
         run: |
           docker compose -f docker-compose.yml down
-          docker compose -f docker-compose.yml up -d --build --remove-orphans
+          docker compose -f docker-compose.yml up -d --remove-orphans

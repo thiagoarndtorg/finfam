@@ -49,7 +49,6 @@ frontend/.cache/
 frontend/.eslintcache
 frontend/yarn-error.log
 frontend/npm-debug.log*
-frontend/package-lock.json
 frontend/.env*
 frontend/.DS_Store
 

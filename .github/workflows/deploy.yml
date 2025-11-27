@@ -72,7 +72,23 @@ jobs:
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
-
+      
+      - name: Create .env file
+        run: |
+          cat <<EOF > .env
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+          PLUGGY_ID=${{ secrets.PLUGGY_ID }}
+          PLUGGY_SECRET=${{ secrets.PLUGGY_SECRET }}
+          OTEL_SERVICE_NAME=${{ secrets.OTEL_SERVICE_NAME }}
+          OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          EOF
+          
       - name: Prune old docker images
         run: docker image prune -f
 

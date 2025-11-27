@@ -32,9 +32,7 @@ jobs:
         working-directory: backend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          chmod +x gradlew
-          ./gradlew build sonar --info
+        run: bash gradlew build sonar --info
 
   analyze-frontend:
     runs-on: ubuntu-latest

@@ -95,6 +95,18 @@ jobs:
           name: frontend-build
           path: frontend-artifact
 
+      - name: Debug artifact structure
+        run: |
+          echo "=== Backend artifact structure ==="
+          find backend-artifact -type f -name "*.jar" || echo "No JAR files found"
+          ls -la backend-artifact/ || echo "backend-artifact directory structure:"
+          find backend-artifact -type f || echo "No files found"
+          echo ""
+          echo "=== Frontend artifact structure ==="
+          ls -la frontend-artifact/ || echo "frontend-artifact directory structure:"
+          find frontend-artifact -type d -maxdepth 3 || echo "Directory structure:"
+          find frontend-artifact -name ".next" -type d || echo ".next not found at root"
+
       - name: Move backend JAR
         run: |
           mkdir -p backend
@@ -102,6 +114,7 @@ jobs:
           JAR_FILE=$(find backend-artifact -name "*.jar" ! -name "*-plain.jar" | head -n 1)
           if [ -z "$JAR_FILE" ]; then
             echo "Error: No JAR file found in backend-artifact"
+            find backend-artifact -type f
             exit 1
           fi
           cp "$JAR_FILE" backend/app.jar
@@ -112,28 +125,57 @@ jobs:
           mkdir -p frontend
           # Remove existing .next if it exists
           rm -rf frontend/.next
-          # Copy .next directory
-          if [ -d "frontend-artifact/.next" ]; then
+          
+          # Check for nested structure (frontend-artifact/frontend/.next)
+          if [ -d "frontend-artifact/frontend/.next" ]; then
+            echo "Found nested structure: frontend-artifact/frontend/.next"
+            cp -r frontend-artifact/frontend/.next frontend/.next
+            echo "Copied .next directory from nested path"
+          # Check for flat structure (frontend-artifact/.next)
+          elif [ -d "frontend-artifact/.next" ]; then
+            echo "Found flat structure: frontend-artifact/.next"
             cp -r frontend-artifact/.next frontend/.next
-            echo "Copied .next directory"
+            echo "Copied .next directory from flat path"
           else
             echo "Error: .next directory not found in frontend-artifact"
+            echo "Searching for .next:"
+            find frontend-artifact -name ".next" -type d
+            echo "Frontend artifact contents:"
+            ls -la frontend-artifact/
             exit 1
           fi
-          # Copy node_modules if it exists
-          if [ -d "frontend-artifact/node_modules" ]; then
+          
+          # Copy node_modules if it exists (check both nested and flat)
+          if [ -d "frontend-artifact/frontend/node_modules" ]; then
+            cp -r frontend-artifact/frontend/node_modules frontend/node_modules
+            echo "Copied node_modules directory from nested path"
+          elif [ -d "frontend-artifact/node_modules" ]; then
             cp -r frontend-artifact/node_modules frontend/node_modules
-            echo "Copied node_modules directory"
+            echo "Copied node_modules directory from flat path"
+          else
+            echo "Warning: node_modules not found, will need to install in Docker"
           fi
+          
           # Copy package.json if it exists
-          if [ -f "frontend-artifact/package.json" ]; then
+          if [ -f "frontend-artifact/frontend/package.json" ]; then
+            cp frontend-artifact/frontend/package.json frontend/package.json
+            echo "Copied package.json from nested path"
+          elif [ -f "frontend-artifact/package.json" ]; then
             cp frontend-artifact/package.json frontend/package.json
-            echo "Copied package.json"
+            echo "Copied package.json from flat path"
+          else
+            echo "Warning: package.json not found"
           fi
+          
           # Copy public directory if it exists
-          if [ -d "frontend-artifact/public" ]; then
+          if [ -d "frontend-artifact/frontend/public" ]; then
+            cp -r frontend-artifact/frontend/public frontend/public
+            echo "Copied public directory from nested path"
+          elif [ -d "frontend-artifact/public" ]; then
             cp -r frontend-artifact/public frontend/public
-            echo "Copied public directory"
+            echo "Copied public directory from flat path"
+          else
+            echo "Warning: public directory not found"
           fi
 
       - name: Create .env file

@@ -61,10 +61,9 @@ sonar {
     property "sonar.organization", "thiagoarndtorg"
     property "sonar.sources", "src/main/java"
     // Only set tests property if test directory has files
-    def testFiles = fileTree("src/test/java").include("**/*.java")
-    if (!testFiles.isEmpty()) {
-      property "sonar.tests", "src/test/java"
-    }
+
+    //property "sonar.tests", "src/test/java"
+    
   }
 }
 

@@ -32,11 +32,14 @@ jobs:
           chmod +x gradlew
           ./gradlew clean build -x test
 
+      - name: Check backend build
+        run: ls -la backend-build/
+
       - name: Upload backend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-build
-          path: backend/build/libs/*.jar
+          path: backend-build/*.jar
 
   frontend:
     runs-on: self-hosted
@@ -65,6 +68,10 @@ jobs:
       - name: Build
         working-directory: frontend
         run: pnpm build
+
+      - name: Check frontend build
+        working-directory: frontend
+        run: ls -la .next
 
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4

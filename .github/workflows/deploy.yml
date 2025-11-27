@@ -7,19 +7,23 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build:
+  backend:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu'
+
+      - name: Optimize Gradle RAM usage
+        run: |
+          echo "org.gradle.jvmargs=-Xmx512m -XX:+UseParallelGC" >> backend/gradle.properties
+          echo "org.gradle.parallel=true" >> backend/gradle.properties
 
       - name: Build Backend
         working-directory: backend
@@ -27,7 +31,13 @@ jobs:
           chmod +x gradlew
           ./gradlew clean build -x test
 
-      
+
+  frontend:
+    runs-on: self-hosted
+    needs: backend
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -35,11 +45,16 @@ jobs:
       - name: Build Frontend
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run build
 
-      
+
+  deploy:
+    runs-on: self-hosted
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Deploy Docker Compose
         run: |
-          cd $GITHUB_WORKSPACE
           docker compose -f docker-compose.yml up -d --remove-orphans

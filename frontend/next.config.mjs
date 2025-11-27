@@ -15,9 +15,9 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
+    webpackBuildWorker: false,
+    parallelServerBuildTraces: false,
+    parallelServerCompiles: false,
   },
 }
 
@@ -38,7 +38,5 @@ function mergeConfig(target, source) {
     }
   }
 }
-
-console.log("NEXT FINAL CONFIG:", JSON.stringify(nextConfig, null, 2))
 
 export default nextConfig

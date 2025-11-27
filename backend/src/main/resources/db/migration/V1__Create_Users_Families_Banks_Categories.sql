@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS banks (
     bank_code VARCHAR(255)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+INSERT INTO banks (name, bank_code)
+SELECT 'PICPAY', 380
+WHERE NOT EXISTS (SELECT 1 FROM banks WHERE name = 'PICPAY' AND bank_code = 380);
+
+INSERT INTO banks (name, bank_code)
+SELECT 'INTER', 077
+WHERE NOT EXISTS (SELECT 1 FROM banks WHERE name = 'INTER' AND bank_code = 077);
+
+INSERT INTO banks (name, bank_code)
+SELECT 'UNKNOWN', 000
+WHERE NOT EXISTS (SELECT 1 FROM banks WHERE name = 'UNKNOWN' AND bank_code = 000);
+
+
 CREATE TABLE IF NOT EXISTS categories (
                                           id INT AUTO_INCREMENT PRIMARY KEY,
                                           family_id INT NOT NULL,

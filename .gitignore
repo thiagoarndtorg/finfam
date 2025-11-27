@@ -77,19 +77,4 @@ backend/.settings/
 backend/.env
 backend/*.log
 
-# ====================================================
-# 🐳 DOCKER
-# ====================================================
-docker-compose.override.yml
-Dockerfile.dev
-Dockerfile.test
-**/.dockerignore
-**/.docker/
-**/docker/
-**/docker-compose.yml
-**/docker-compose.yaml
-**/compose.yml
-**/compose.yaml
-*.tar
-*.img
-*.container
+

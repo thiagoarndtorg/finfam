@@ -15,3 +15,5 @@ public class AcceptInvitationRequest {
     private String token;
 }
 
+
+

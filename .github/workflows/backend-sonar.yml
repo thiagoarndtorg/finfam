@@ -5,10 +5,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-
 jobs:
   analyze-backend:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,8 +25,7 @@ jobs:
 
       - name: Generate Gradle Wrapper
         working-directory: backend
-        run: |
-          gradle wrapper --gradle-version 8.14
+        run: gradle wrapper --gradle-version 8.14
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -43,4 +42,3 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew build sonar --info
-

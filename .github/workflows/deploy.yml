@@ -1,8 +1,7 @@
 name: Deploy
-
 on:
   workflow_run:
-    workflows: ["Backend SonarQube"]
+    workflows: ["Backend SonarQube", "Frontend SonarQube"]
     types:
       - completed
 
@@ -13,20 +12,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
- 
-      - name: Build Backend
-        working-directory: backend
-        run: |
-          chmod +x gradlew
-          ./gradlew build
-
-
-      - name: Build Frontend
-        working-directory: frontend
-        run: |
-          npm install
-          npm run build
 
       - name: Deploy Docker Compose
         run: |

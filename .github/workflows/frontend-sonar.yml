@@ -1,5 +1,9 @@
 name: Frontend SonarQube
 on:
+  workflow_run:
+    workflows: ["Backend SonarQube"]
+    types:
+      - completed
   push:
     branches: [ master ]
   pull_request:

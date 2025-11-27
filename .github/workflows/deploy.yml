@@ -32,18 +32,15 @@ jobs:
           chmod +x gradlew
           ./gradlew clean build -x test
 
-      - name: Check backend build
-        run: ls -la backend-build/
-
       - name: Upload backend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-build
-          path: backend-build/*.jar
+          path: backend/build/libs/*.jar
+          retention-days: 1
 
   frontend:
     runs-on: self-hosted
-    needs: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -69,15 +66,16 @@ jobs:
         working-directory: frontend
         run: pnpm build
 
-      - name: Check frontend build
-        working-directory: frontend
-        run: ls -la .next
-
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/.next
+          path: |
+            frontend/.next
+            frontend/node_modules
+            frontend/package.json
+            frontend/public
+          retention-days: 1
 
   deploy:
     runs-on: self-hosted
@@ -85,20 +83,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
-          path: .
+          name: backend-build
+          path: backend-artifact
 
-      - name: Move backend build
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend-artifact
+
+      - name: Move backend JAR
         run: |
           mkdir -p backend
-          mv backend-build/*.jar backend/app.jar
+          # Find the JAR file (excluding -plain.jar)
+          JAR_FILE=$(find backend-artifact -name "*.jar" ! -name "*-plain.jar" | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "Error: No JAR file found in backend-artifact"
+            exit 1
+          fi
+          cp "$JAR_FILE" backend/app.jar
+          echo "Copied $(basename $JAR_FILE) to backend/app.jar"
 
       - name: Move frontend build
         run: |
+          mkdir -p frontend
+          # Remove existing .next if it exists
           rm -rf frontend/.next
-          mv frontend-build/.next frontend/.next
+          # Copy .next directory
+          if [ -d "frontend-artifact/.next" ]; then
+            cp -r frontend-artifact/.next frontend/.next
+            echo "Copied .next directory"
+          else
+            echo "Error: .next directory not found in frontend-artifact"
+            exit 1
+          fi
+          # Copy node_modules if it exists
+          if [ -d "frontend-artifact/node_modules" ]; then
+            cp -r frontend-artifact/node_modules frontend/node_modules
+            echo "Copied node_modules directory"
+          fi
+          # Copy package.json if it exists
+          if [ -f "frontend-artifact/package.json" ]; then
+            cp frontend-artifact/package.json frontend/package.json
+            echo "Copied package.json"
+          fi
+          # Copy public directory if it exists
+          if [ -d "frontend-artifact/public" ]; then
+            cp -r frontend-artifact/public frontend/public
+            echo "Copied public directory"
+          fi
 
       - name: Create .env file
         run: |
@@ -114,6 +150,7 @@ jobs:
           OTEL_SERVICE_NAME=${{ secrets.OTEL_SERVICE_NAME }}
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
+          OTEL_RESOURCE_ATTRIBUTES=${{ secrets.OTEL_RESOURCE_ATTRIBUTES }}
           EOF
 
       - name: Prune old docker images
@@ -122,4 +159,4 @@ jobs:
       - name: Deploy with Docker Compose
         run: |
           docker compose -f docker-compose.yml down
-          docker compose -f docker-compose.yml up -d --remove-orphans
+          docker compose -f docker-compose.yml up -d --build --remove-orphans

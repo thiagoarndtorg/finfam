@@ -2,13 +2,20 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Copia pacotes e build pronto do frontend
+# Copy package files
 COPY frontend/package*.json ./
+COPY frontend/pnpm-lock.yaml* ./
+
+# Copy production dependencies
 COPY frontend/node_modules ./node_modules
+
+# Copy build output
 COPY frontend/.next ./.next
+
+# Copy public assets
 COPY frontend/public ./public
 
 EXPOSE 3000
 
-# Inicializa a aplicação
-CMD ["npm", "start"]
+# Start Next.js in production mode
+CMD ["npm", "run", "start"]

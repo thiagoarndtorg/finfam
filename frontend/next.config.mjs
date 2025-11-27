@@ -1,9 +1,7 @@
-let userConfig = undefined
+let userConfig = {}
 try {
-  userConfig = await import('./v0-user-next.config')
-} catch (e) {
-  // ignore error
-}
+  userConfig = (await import('./v0-user-next.config')).default || {}
+} catch {}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -12,7 +10,7 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  }, 
+  },
   images: {
     unoptimized: true,
   },
@@ -25,24 +23,22 @@ const nextConfig = {
 
 mergeConfig(nextConfig, userConfig)
 
-function mergeConfig(nextConfig, userConfig) {
-  if (!userConfig) {
-    return
-  }
+function mergeConfig(target, source) {
+  if (!source) return
 
-  for (const key in userConfig) {
+  for (const key in source) {
     if (
-      typeof nextConfig[key] === 'object' &&
-      !Array.isArray(nextConfig[key])
+      typeof target[key] === 'object' &&
+      typeof source[key] === 'object' &&
+      !Array.isArray(target[key])
     ) {
-      nextConfig[key] = {
-        ...nextConfig[key],
-        ...userConfig[key],
-      }
+      target[key] = { ...target[key], ...source[key] }
     } else {
-      nextConfig[key] = userConfig[key]
+      target[key] = source[key]
     }
   }
 }
+
+console.log("NEXT FINAL CONFIG:", JSON.stringify(nextConfig, null, 2))
 
 export default nextConfig

@@ -24,15 +24,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('backend/**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('backend/**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Build & Analyze Backend
         working-directory: backend
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew build sonar --info
-
+        run: |
+          chmod +x gradlew
+          ./gradlew build sonar --info
 
   analyze-frontend:
     runs-on: ubuntu-latest
@@ -57,4 +59,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           npm install -g sonar-scanner
-          sonar-scanner
+          sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }}

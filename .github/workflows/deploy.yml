@@ -14,7 +14,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create .env file (preguiça de botar no actions do repo)
+      - name: Create .env file
         run: |
           cat > .env << EOF
           MAIL_USERNAME=${{ vars.MAIL_USERNAME }}

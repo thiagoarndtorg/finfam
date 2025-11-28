@@ -14,6 +14,34 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Create .env file (preguiça de botar no actions do repo)
+        run: |
+          cat > .env << EOF
+          MAIL_USERNAME=${{ vars.MAIL_USERNAME }}
+          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+          PLUGGY_ID=${{ vars.PLUGGY_ID }}
+          PLUGGY_SECRET=${{ secrets.PLUGGY_SECRET }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+
+          DB_NAME=${{ vars.DB_NAME }}
+          DB_USER=${{ vars.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+
+          # OTEL_SERVICE_NAME=teste
+          OTEL_EXPORTER_OTLP_ENDPOINT=${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS="${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}"
+          OTEL_EXPORTER_OTLP_PROTOCOL=${{ vars.OTEL_EXPORTER_OTLP_PROTOCOL }}
+
+          # BACKEND
+          OTEL_SERVICE_NAME_BACKEND=${{ vars.OTEL_SERVICE_NAME_BACKEND }}
+          OTEL_RESOURCE_ATTRIBUTES_BACKEND=${{ vars.OTEL_RESOURCE_ATTRIBUTES_BACKEND }}
+
+          # FRONTEND
+          OTEL_SERVICE_NAME_FRONTEND=${{ vars.OTEL_SERVICE_NAME_FRONTEND }}
+          OTEL_RESOURCE_ATTRIBUTES_FRONTEND=${{ vars.OTEL_RESOURCE_ATTRIBUTES_FRONTEND }}
+          EOF
+        shell: bash
+
       - name: Stop running containers
         run: |
           docker compose down || true

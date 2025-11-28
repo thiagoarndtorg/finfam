@@ -27,6 +27,8 @@ jobs:
           DB_USER=${{ vars.DB_USER }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
+          FRONTEND_URL=${{ vars.FRONTEND_URL }}
+
           # OTEL_SERVICE_NAME=teste
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS="${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}"

@@ -99,15 +99,24 @@ jobs:
           echo "Contents preview:"
           ls -la frontend/.next/ | head -10
 
+      - name: Create frontend build archive
+        run: |
+          cd frontend
+          echo "Creating tarball with: .next, node_modules, package.json, public"
+          tar -czf ../frontend-build.tar.gz .next node_modules package.json public
+          cd ..
+          echo "Archive created:"
+          ls -lh frontend-build.tar.gz
+          echo "Verifying archive contents (first 30 entries):"
+          tar -tzf frontend-build.tar.gz | head -30
+          echo "Checking if .next is in archive:"
+          tar -tzf frontend-build.tar.gz | grep "^\.next" | head -5 || echo "WARNING: .next not found in archive!"
+
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: |
-            frontend/.next
-            frontend/node_modules
-            frontend/package.json
-            frontend/public
+          path: frontend-build.tar.gz
           retention-days: 1
           if-no-files-found: error
 
@@ -134,11 +143,11 @@ jobs:
           echo "=== Backend artifact ==="
           find backend-artifact -name "*.jar" -type f
           echo ""
-          echo "=== Frontend artifact structure ==="
+          echo "=== Frontend artifact ==="
           ls -la frontend-artifact/
           echo ""
-          echo "Searching for .next:"
-          find frontend-artifact -name ".next" -type d 2>/dev/null || echo "No .next found"
+          echo "Checking for tarball:"
+          find frontend-artifact -name "*.tar.gz" -type f || echo "No tarball found"
 
       - name: Move backend JAR
         run: |
@@ -152,32 +161,42 @@ jobs:
           cp "$JAR_FILE" backend/app.jar
           echo "Copied $(basename $JAR_FILE) to backend/app.jar"
 
+      - name: Extract frontend build
+        run: |
+          echo "Looking for tarball in frontend-artifact..."
+          TARBALL=$(find frontend-artifact -name "*.tar.gz" -type f | head -n 1)
+          if [ -z "$TARBALL" ]; then
+            echo "ERROR: Tarball not found in frontend-artifact"
+            echo "Contents of frontend-artifact:"
+            ls -la frontend-artifact/
+            find frontend-artifact -type f
+            exit 1
+          fi
+          echo "Found tarball: $TARBALL"
+          mkdir -p frontend-extracted
+          tar -xzf "$TARBALL" -C frontend-extracted
+          echo "Extracted files:"
+          ls -la frontend-extracted/
+          echo "Checking for .next:"
+          [ -d "frontend-extracted/.next" ] && echo "✓ .next exists" || echo "✗ .next missing"
+
       - name: Move frontend build
         run: |
           mkdir -p frontend
           rm -rf frontend/.next
           
-          # Try nested structure first (frontend-artifact/frontend/.next)
-          if [ -d "frontend-artifact/frontend/.next" ]; then
-            echo "Found nested structure"
-            cp -r frontend-artifact/frontend/.next frontend/.next
-            [ -d "frontend-artifact/frontend/node_modules" ] && cp -r frontend-artifact/frontend/node_modules frontend/node_modules || true
-            [ -f "frontend-artifact/frontend/package.json" ] && cp frontend-artifact/frontend/package.json frontend/package.json || true
-            [ -d "frontend-artifact/frontend/public" ] && cp -r frontend-artifact/frontend/public frontend/public || true
-          # Try flat structure (frontend-artifact/.next)
-          elif [ -d "frontend-artifact/.next" ]; then
-            echo "Found flat structure"
-            cp -r frontend-artifact/.next frontend/.next
-            [ -d "frontend-artifact/node_modules" ] && cp -r frontend-artifact/node_modules frontend/node_modules || true
-            [ -f "frontend-artifact/package.json" ] && cp frontend-artifact/package.json frontend/package.json || true
-            [ -d "frontend-artifact/public" ] && cp -r frontend-artifact/public frontend/public || true
-          else
-            echo "ERROR: .next not found in artifact"
-            echo "Artifact contents:"
-            ls -la frontend-artifact/
-            find frontend-artifact -type d -maxdepth 2
+          if [ ! -d "frontend-extracted/.next" ]; then
+            echo "ERROR: .next not found in extracted files"
+            echo "Extracted directory contents:"
+            ls -la frontend-extracted/
             exit 1
           fi
+          
+          echo "Copying files from frontend-extracted to frontend..."
+          cp -r frontend-extracted/.next frontend/.next
+          [ -d "frontend-extracted/node_modules" ] && cp -r frontend-extracted/node_modules frontend/node_modules || echo "Warning: node_modules not found"
+          [ -f "frontend-extracted/package.json" ] && cp frontend-extracted/package.json frontend/package.json || echo "Warning: package.json not found"
+          [ -d "frontend-extracted/public" ] && cp -r frontend-extracted/public frontend/public || echo "Warning: public not found"
           
           echo "Frontend files copied successfully"
           echo "Verifying .next exists:"

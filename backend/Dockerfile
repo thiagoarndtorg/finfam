@@ -2,10 +2,10 @@
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-# Copia o JAR já buildado
-COPY backend/app.jar app.jar
+# Copy the JAR (build context is already ./backend, so just app.jar)
+COPY app.jar app.jar
 
 EXPOSE 8081
 
-# Executa o JAR
+# Execute the JAR
 ENTRYPOINT ["java", "-jar", "app.jar"]

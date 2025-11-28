@@ -2,18 +2,18 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy package files
-COPY frontend/package*.json ./
-COPY frontend/pnpm-lock.yaml* ./
+# Copy package files (build context is already ./frontend)
+COPY package*.json ./
+COPY pnpm-lock.yaml* ./
 
 # Copy production dependencies
-COPY frontend/node_modules ./node_modules
+COPY node_modules ./node_modules
 
 # Copy build output
-COPY frontend/.next ./.next
+COPY .next ./.next
 
 # Copy public assets
-COPY frontend/public ./public
+COPY public ./public
 
 EXPOSE 3000
 

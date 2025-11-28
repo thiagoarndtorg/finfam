@@ -44,8 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Remove corrupted cache
-        run: rm -rf frontend/node_modules
+      - name: Clean previous build
+        run: |
+          rm -rf frontend/.next
+          rm -rf frontend/node_modules
+          echo "Cleaned previous build artifacts"
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v3
@@ -62,9 +65,33 @@ jobs:
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Build
+      - name: Build Next.js
         working-directory: frontend
-        run: pnpm build
+        run: |
+          echo "Starting Next.js build..."
+          pnpm build || {
+            echo "Build failed with exit code $?"
+            echo "Checking for build errors..."
+            exit 1
+          }
+          echo "Build completed successfully"
+
+      - name: Verify .next directory exists
+        run: |
+          if [ ! -d "frontend/.next" ]; then
+            echo "ERROR: .next directory was not created!"
+            echo "Current directory: $(pwd)"
+            echo "Frontend directory contents:"
+            ls -la frontend/
+            echo "Checking for any .next directories:"
+            find . -name ".next" -type d 2>/dev/null || echo "No .next found anywhere"
+            exit 1
+          fi
+          echo ".next directory found!"
+          echo "Contents of .next:"
+          ls -la frontend/.next/ | head -20
+          echo "Size of .next:"
+          du -sh frontend/.next/
 
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
@@ -76,6 +103,7 @@ jobs:
             frontend/package.json
             frontend/public
           retention-days: 1
+          if-no-files-found: error
 
   deploy:
     runs-on: self-hosted

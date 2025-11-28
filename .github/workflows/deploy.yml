@@ -1,228 +1,27 @@
-name: Full CI/CD
+name: Deploy to EC2 (Self-hosted)
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    types: [opened, synchronize, reopened]
+    branches: [ "master" ]
 
 jobs:
-
-  backend:
+  deploy:
     runs-on: self-hosted
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: 'zulu'
-
-      - name: Optimize Gradle RAM usage
+      - name: Stop running containers
         run: |
-          echo "org.gradle.jvmargs=-Xmx512m -XX:+UseParallelGC" >> backend/gradle.properties
-          echo "org.gradle.parallel=true" >> backend/gradle.properties
+          docker compose down || true
 
-      - name: Build Backend
-        working-directory: backend
+      - name: Build and start containers
         run: |
-          chmod +x gradlew
-          ./gradlew clean build -x test
+          docker compose up -d --build
 
-      - name: Upload backend build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-build
-          path: backend/build/libs/*.jar
-          retention-days: 1
-
-  frontend:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Clean previous build
+      - name: Cleanup unused images
         run: |
-          rm -rf frontend/.next
-          rm -rf frontend/node_modules
-          echo "Cleaned previous build artifacts"
-
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Next.js
-        working-directory: frontend
-        env:
-          NODE_OPTIONS: '--max-old-space-size=4096'
-        run: |
-          echo "Starting Next.js build in $(pwd)..."
-          pnpm build
-          echo "Build completed. Verifying .next exists..."
-          if [ ! -d ".next" ]; then
-            echo "ERROR: .next was not created in $(pwd)"
-            ls -la
-            exit 1
-          fi
-          echo ".next directory created successfully"
-          ls -la .next | head -10
-
-      - name: Verify .next from root directory
-        run: |
-          echo "Verifying from root directory: $(pwd)"
-          if [ ! -d "frontend/.next" ]; then
-            echo "ERROR: frontend/.next does not exist!"
-            echo "Current directory contents:"
-            ls -la
-            echo "Frontend directory contents:"
-            ls -la frontend/ || echo "frontend directory not found"
-            echo "Searching for .next:"
-            find . -name ".next" -type d 2>/dev/null
-            exit 1
-          fi
-          echo "✓ frontend/.next exists"
-          echo "Size: $(du -sh frontend/.next | cut -f1)"
-          echo "Contents preview:"
-          ls -la frontend/.next/ | head -10
-
-      - name: Create frontend build archive
-        run: |
-          cd frontend
-          echo "Creating tarball with: .next, node_modules, package.json, public"
-          tar -czf ../frontend-build.tar.gz .next node_modules package.json public
-          cd ..
-          echo "Archive created:"
-          ls -lh frontend-build.tar.gz
-          echo "Verifying archive contents (first 30 entries):"
-          tar -tzf frontend-build.tar.gz | head -30
-          echo "Checking if .next is in archive:"
-          tar -tzf frontend-build.tar.gz | grep "^\.next" | head -5 || echo "WARNING: .next not found in archive!"
-
-      - name: Upload frontend build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend-build.tar.gz
-          retention-days: 1
-          if-no-files-found: error
-
-  deploy:
-    runs-on: self-hosted
-    needs: [backend, frontend]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download backend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-build
-          path: backend-artifact
-
-      - name: Download frontend artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend-artifact
-
-      - name: Debug artifact structure
-        run: |
-          echo "=== Backend artifact ==="
-          find backend-artifact -name "*.jar" -type f
-          echo ""
-          echo "=== Frontend artifact ==="
-          ls -la frontend-artifact/
-          echo ""
-          echo "Checking for tarball:"
-          find frontend-artifact -name "*.tar.gz" -type f || echo "No tarball found"
-
-      - name: Move backend JAR
-        run: |
-          mkdir -p backend
-          JAR_FILE=$(find backend-artifact -name "*.jar" ! -name "*-plain.jar" | head -n 1)
-          if [ -z "$JAR_FILE" ]; then
-            echo "Error: No JAR file found"
-            find backend-artifact -type f
-            exit 1
-          fi
-          cp "$JAR_FILE" backend/app.jar
-          echo "Copied $(basename $JAR_FILE) to backend/app.jar"
-
-      - name: Extract frontend build
-        run: |
-          echo "Looking for tarball in frontend-artifact..."
-          TARBALL=$(find frontend-artifact -name "*.tar.gz" -type f | head -n 1)
-          if [ -z "$TARBALL" ]; then
-            echo "ERROR: Tarball not found in frontend-artifact"
-            echo "Contents of frontend-artifact:"
-            ls -la frontend-artifact/
-            find frontend-artifact -type f
-            exit 1
-          fi
-          echo "Found tarball: $TARBALL"
-          mkdir -p frontend-extracted
-          tar -xzf "$TARBALL" -C frontend-extracted
-          echo "Extracted files:"
-          ls -la frontend-extracted/
-          echo "Checking for .next:"
-          [ -d "frontend-extracted/.next" ] && echo "✓ .next exists" || echo "✗ .next missing"
-
-      - name: Move frontend build
-        run: |
-          mkdir -p frontend
-          rm -rf frontend/.next
-          
-          if [ ! -d "frontend-extracted/.next" ]; then
-            echo "ERROR: .next not found in extracted files"
-            echo "Extracted directory contents:"
-            ls -la frontend-extracted/
-            exit 1
-          fi
-          
-          echo "Copying files from frontend-extracted to frontend..."
-          cp -r frontend-extracted/.next frontend/.next
-          [ -d "frontend-extracted/node_modules" ] && cp -r frontend-extracted/node_modules frontend/node_modules || echo "Warning: node_modules not found"
-          [ -f "frontend-extracted/package.json" ] && cp frontend-extracted/package.json frontend/package.json || echo "Warning: package.json not found"
-          [ -d "frontend-extracted/public" ] && cp -r frontend-extracted/public frontend/public || echo "Warning: public not found"
-          
-          echo "Frontend files copied successfully"
-          echo "Verifying .next exists:"
-          [ -d "frontend/.next" ] && echo "✓ frontend/.next exists" || echo "✗ frontend/.next missing"
-
-      - name: Create .env file
-        run: |
-          cat <<EOF > .env
-          DB_NAME=${{ secrets.DB_NAME }}
-          DB_USER=${{ secrets.DB_USER }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          SECRET_KEY=${{ secrets.SECRET_KEY }}
-          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-          PLUGGY_ID=${{ secrets.PLUGGY_ID }}
-          PLUGGY_SECRET=${{ secrets.PLUGGY_SECRET }}
-          OTEL_SERVICE_NAME=${{ secrets.OTEL_SERVICE_NAME }}
-          OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          OTEL_EXPORTER_OTLP_HEADERS=${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
-          OTEL_RESOURCE_ATTRIBUTES=${{ secrets.OTEL_RESOURCE_ATTRIBUTES }}
-          EOF
-
-      - name: Prune old docker images
-        run: docker image prune -f
-
-      - name: Deploy with Docker Compose
-        run: |
-          docker compose -f docker-compose.yml down
-          docker compose -f docker-compose.yml up -d --build --remove-orphans
+          docker image prune -f

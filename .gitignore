@@ -34,6 +34,7 @@ Thumbs.db
 __pycache__/
 *.sublime-workspace
 *.sublime-project
+docker-compose.local.yml
 
 # ====================================================
 # ⚙️ FRONTEND (Next.js / Node.js)
@@ -51,7 +52,8 @@ frontend/yarn-error.log
 frontend/npm-debug.log*
 frontend/.env*
 frontend/.DS_Store
-
+frontend/Dockerfile.local
+frontend/.dockerignore
 # ====================================================
 # ☕ BACKEND (Spring Boot - Gradle or Maven)
 # ====================================================
@@ -71,5 +73,5 @@ backend/.project
 backend/.settings/
 backend/.env
 backend/*.log
-
+backend/Dockerfile.local
 

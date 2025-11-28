@@ -13,6 +13,10 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(17)
 	}
+	
+}
+tasks.named('bootRun') {
+    jvmArgs = ['-javaagent:/opt/grafana-opentelemetry-java.jar']
 }
 
 configurations {
@@ -26,39 +30,49 @@ repositories {
 }
 
 dependencies {
-	implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-	implementation("io.opentelemetry:opentelemetry-sdk")
-    implementation 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.22.0'
+	// OpenTelemetry
+	implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+	implementation 'io.opentelemetry:opentelemetry-sdk'
+	implementation 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.22.0'
+	
+	// Micrometer (Prometheus + OTLP for Grafana Cloud)
 	implementation 'io.micrometer:micrometer-registry-prometheus'
+	//implementation 'io.micrometer:micrometer-registry-otlp'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	
+	// Spring Boot
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'com.auth0:java-jwt:3.18.2'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	
+	// Database
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.flywaydb:flyway-mysql'
-	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
-//	implementation 'org.flywaydb:flyway-database-postgresql'
-//	runtimeOnly 'org.postgresql:postgresql'
+	
+	// Utilities
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	implementation 'com.auth0:java-jwt:3.18.2'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+	implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+	
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
+	
+	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation 'org.mockito:mockito-core'
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
 	testImplementation 'org.junit.platform:junit-platform-suite-api:1.7.0'
 	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
 	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-	implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-//	implementation 'org.postgresql:postgresql:42.7.3'
-	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-	
-}	
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
 
 sonar {
   properties {

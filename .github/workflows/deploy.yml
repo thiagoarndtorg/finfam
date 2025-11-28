@@ -61,37 +61,43 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      - name: Install
+      - name: Install dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
       - name: Build Next.js
         working-directory: frontend
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
         run: |
-          echo "Starting Next.js build..."
-          pnpm build || {
-            echo "Build failed with exit code $?"
-            echo "Checking for build errors..."
-            exit 1
-          }
-          echo "Build completed successfully"
-
-      - name: Verify .next directory exists
-        run: |
-          if [ ! -d "frontend/.next" ]; then
-            echo "ERROR: .next directory was not created!"
-            echo "Current directory: $(pwd)"
-            echo "Frontend directory contents:"
-            ls -la frontend/
-            echo "Checking for any .next directories:"
-            find . -name ".next" -type d 2>/dev/null || echo "No .next found anywhere"
+          echo "Starting Next.js build in $(pwd)..."
+          pnpm build
+          echo "Build completed. Verifying .next exists..."
+          if [ ! -d ".next" ]; then
+            echo "ERROR: .next was not created in $(pwd)"
+            ls -la
             exit 1
           fi
-          echo ".next directory found!"
-          echo "Contents of .next:"
-          ls -la frontend/.next/ | head -20
-          echo "Size of .next:"
-          du -sh frontend/.next/
+          echo ".next directory created successfully"
+          ls -la .next | head -10
+
+      - name: Verify .next from root directory
+        run: |
+          echo "Verifying from root directory: $(pwd)"
+          if [ ! -d "frontend/.next" ]; then
+            echo "ERROR: frontend/.next does not exist!"
+            echo "Current directory contents:"
+            ls -la
+            echo "Frontend directory contents:"
+            ls -la frontend/ || echo "frontend directory not found"
+            echo "Searching for .next:"
+            find . -name ".next" -type d 2>/dev/null
+            exit 1
+          fi
+          echo "✓ frontend/.next exists"
+          echo "Size: $(du -sh frontend/.next | cut -f1)"
+          echo "Contents preview:"
+          ls -la frontend/.next/ | head -10
 
       - name: Upload frontend build artifact
         uses: actions/upload-artifact@v4
@@ -125,23 +131,21 @@ jobs:
 
       - name: Debug artifact structure
         run: |
-          echo "=== Backend artifact structure ==="
-          find backend-artifact -type f -name "*.jar" || echo "No JAR files found"
-          ls -la backend-artifact/ || echo "backend-artifact directory structure:"
-          find backend-artifact -type f || echo "No files found"
+          echo "=== Backend artifact ==="
+          find backend-artifact -name "*.jar" -type f
           echo ""
           echo "=== Frontend artifact structure ==="
-          ls -la frontend-artifact/ || echo "frontend-artifact directory structure:"
-          find frontend-artifact -type d -maxdepth 3 || echo "Directory structure:"
-          find frontend-artifact -name ".next" -type d || echo ".next not found at root"
+          ls -la frontend-artifact/
+          echo ""
+          echo "Searching for .next:"
+          find frontend-artifact -name ".next" -type d 2>/dev/null || echo "No .next found"
 
       - name: Move backend JAR
         run: |
           mkdir -p backend
-          # Find the JAR file (excluding -plain.jar)
           JAR_FILE=$(find backend-artifact -name "*.jar" ! -name "*-plain.jar" | head -n 1)
           if [ -z "$JAR_FILE" ]; then
-            echo "Error: No JAR file found in backend-artifact"
+            echo "Error: No JAR file found"
             find backend-artifact -type f
             exit 1
           fi
@@ -151,60 +155,33 @@ jobs:
       - name: Move frontend build
         run: |
           mkdir -p frontend
-          # Remove existing .next if it exists
           rm -rf frontend/.next
           
-          # Check for nested structure (frontend-artifact/frontend/.next)
+          # Try nested structure first (frontend-artifact/frontend/.next)
           if [ -d "frontend-artifact/frontend/.next" ]; then
-            echo "Found nested structure: frontend-artifact/frontend/.next"
+            echo "Found nested structure"
             cp -r frontend-artifact/frontend/.next frontend/.next
-            echo "Copied .next directory from nested path"
-          # Check for flat structure (frontend-artifact/.next)
+            [ -d "frontend-artifact/frontend/node_modules" ] && cp -r frontend-artifact/frontend/node_modules frontend/node_modules || true
+            [ -f "frontend-artifact/frontend/package.json" ] && cp frontend-artifact/frontend/package.json frontend/package.json || true
+            [ -d "frontend-artifact/frontend/public" ] && cp -r frontend-artifact/frontend/public frontend/public || true
+          # Try flat structure (frontend-artifact/.next)
           elif [ -d "frontend-artifact/.next" ]; then
-            echo "Found flat structure: frontend-artifact/.next"
+            echo "Found flat structure"
             cp -r frontend-artifact/.next frontend/.next
-            echo "Copied .next directory from flat path"
+            [ -d "frontend-artifact/node_modules" ] && cp -r frontend-artifact/node_modules frontend/node_modules || true
+            [ -f "frontend-artifact/package.json" ] && cp frontend-artifact/package.json frontend/package.json || true
+            [ -d "frontend-artifact/public" ] && cp -r frontend-artifact/public frontend/public || true
           else
-            echo "Error: .next directory not found in frontend-artifact"
-            echo "Searching for .next:"
-            find frontend-artifact -name ".next" -type d
-            echo "Frontend artifact contents:"
+            echo "ERROR: .next not found in artifact"
+            echo "Artifact contents:"
             ls -la frontend-artifact/
+            find frontend-artifact -type d -maxdepth 2
             exit 1
           fi
           
-          # Copy node_modules if it exists (check both nested and flat)
-          if [ -d "frontend-artifact/frontend/node_modules" ]; then
-            cp -r frontend-artifact/frontend/node_modules frontend/node_modules
-            echo "Copied node_modules directory from nested path"
-          elif [ -d "frontend-artifact/node_modules" ]; then
-            cp -r frontend-artifact/node_modules frontend/node_modules
-            echo "Copied node_modules directory from flat path"
-          else
-            echo "Warning: node_modules not found, will need to install in Docker"
-          fi
-          
-          # Copy package.json if it exists
-          if [ -f "frontend-artifact/frontend/package.json" ]; then
-            cp frontend-artifact/frontend/package.json frontend/package.json
-            echo "Copied package.json from nested path"
-          elif [ -f "frontend-artifact/package.json" ]; then
-            cp frontend-artifact/package.json frontend/package.json
-            echo "Copied package.json from flat path"
-          else
-            echo "Warning: package.json not found"
-          fi
-          
-          # Copy public directory if it exists
-          if [ -d "frontend-artifact/frontend/public" ]; then
-            cp -r frontend-artifact/frontend/public frontend/public
-            echo "Copied public directory from nested path"
-          elif [ -d "frontend-artifact/public" ]; then
-            cp -r frontend-artifact/public frontend/public
-            echo "Copied public directory from flat path"
-          else
-            echo "Warning: public directory not found"
-          fi
+          echo "Frontend files copied successfully"
+          echo "Verifying .next exists:"
+          [ -d "frontend/.next" ] && echo "✓ frontend/.next exists" || echo "✗ frontend/.next missing"
 
       - name: Create .env file
         run: |

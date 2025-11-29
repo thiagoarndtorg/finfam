@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "otel": "tsc src/instrumentation.ts --outDir dist-otel"
+    "otel": "tsc instrumentation.ts --outDir dist-otel"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

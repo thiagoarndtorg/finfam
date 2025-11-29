@@ -6,7 +6,7 @@ receivers:
 
 exporters:
   otlp/grafana:
-    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    endpoint: otlp-gateway-prod-sa-east-1.grafana.net:443
     headers:
       Authorization: ${OTEL_EXPORTER_OTLP_HEADERS}
 

@@ -18,7 +18,6 @@ const nextConfig = {
     webpackBuildWorker: false,
     parallelServerBuildTraces: false,
     parallelServerCompiles: false,
-    instrumentationHook: true,
   },
 }
 

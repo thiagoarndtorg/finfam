@@ -96,6 +96,18 @@ services:
       - appnet
     restart: always
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    networks:
+      - appnet
+
 volumes:
   mysql_data:
 

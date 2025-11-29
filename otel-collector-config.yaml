@@ -1,0 +1,29 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+  hostmetrics:
+    collection_interval: 60s
+    scrapers:
+      cpu:
+      memory:
+      filesystem:
+      network:
+
+exporters:
+  otlp/grafana:
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    headers:
+      Authorization: ${OTEL_EXPORTER_OTLP_HEADERS}
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/grafana]
+
+    metrics:
+      receivers: [hostmetrics]
+      exporters: [otlp/grafana]

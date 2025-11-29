@@ -2,14 +2,19 @@
 
 **Título do Projeto:** Gestão Financeira Inteligente com Open Finance  
 **Nome do Estudante:** Thiago Cirne Arndt  
-**Curso:** Engenharia de Software  
-**Data de Entrega:** 28/11/2025 
+**Professor Responsável:** Diogo Winck  
+**Curso:** Engenharia de Software – PUC-SC  
+**Data de Entrega:** 28/11/2025  
 
 ---
 
 # Resumo
 
-Este documento apresenta o projeto "Gestão Financeira Inteligente com Open Finance", uma ferramenta de software para gestão financeira pessoal e familiar. O sistema permite registro e login com JWT, conexão de contas bancárias via PluggyAI, e armazenamento em banco de dados MySQL. Usuários podem criar famílias, convidar membros e visualizar dashboards agregados, com categorização manual de transações baseada em categorias definidas por administradores. Inclui RBAC, com papéis de administrador (gerenciamento total) e visualizador (acesso limitado). A aplicação é dockerizada e hospedada na AWS, com CI/CD e SonarQube para observabilidade.
+Este documento apresenta o projeto "Gestão Financeira Inteligente com Open Finance", uma ferramenta de software para gestão financeira pessoal e familiar.  
+O sistema permite registro e login com JWT, conexão de contas bancárias via PluggyAI e armazenamento dos dados em banco SQL (MySQL).  
+Usuários podem criar famílias, convidar membros e visualizar dashboards agregados, com categorização **manual** de transações baseada em categorias definidas por administradores.  
+Inclui RBAC com papéis de administrador e visualizador.  
+A aplicação é dockerizada e está preparada para deploy em cloud (por exemplo, AWS), com CI/CD e SonarQube para observabilidade.
 
 ---
 
@@ -17,27 +22,33 @@ Este documento apresenta o projeto "Gestão Financeira Inteligente com Open Fina
 
 ## Contexto
 
-- Com o avanço do Open Finance no Brasil, os dados financeiros estão mais acessíveis, mas ainda falta uma ferramenta simples e integrada que ajude as pessoas a organizar despesas, entender hábitos de consumo e colaborar com membros da família de forma segura e eficiente, especialmente em contextos de múltiplas contas e famílias.
+Com o avanço do Open Finance no Brasil, os dados financeiros estão mais acessíveis, mas ainda falta uma ferramenta simples e integrada que ajude as pessoas a organizar despesas, entender hábitos de consumo e colaborar com membros da família de forma segura e eficiente.
+
+Além disso, no ambiente familiar, é fundamental garantir que os dados financeiros sejam compartilhados apenas com membros autorizados, preservando a confidencialidade e a integridade das informações.
 
 ## Justificativa
 
-- O projeto é relevante para a Engenharia de Software por explorar integração com APIs modernas (Open Finance), implementar RBAC e gerenciar dados de múltiplos usuários em contextos familiares, com foco em escalabilidade e privacidade.
+O projeto é relevante para a Engenharia de Software por explorar:
 
-- Ele atende a uma necessidade real de gestão financeira pessoal e familiar, com potencial de impacto social e econômico.
+- Integração com APIs modernas (Open Finance via PluggyAI).  
+- Implementação de RBAC (papéis administrador e visualizador).  
+- Gestão multiusuário em contexto familiar (múltiplas famílias, múltiplos membros).  
+- Boas práticas de arquitetura backend (Spring Boot) e frontend (NextJS), com foco em escalabilidade, segurança e observabilidade.
+
+A solução atende a necessidades reais de gestão financeira colaborativa com impacto social e econômico.
 
 ## Objetivos
 
-- **Principal:** Desenvolver um software que integre contas bancárias via Open Finance, categorize despesas e gere relatórios visuais.
+### Principal
 
-- **Secundários:**
+Desenvolver um software que integre contas bancárias via Open Finance, permita categorização de despesas e gere relatórios/dashboards visuais para famílias.
 
-  - Implementar um sistema de controle de acesso baseado em papéis (RBAC).
+### Secundários
 
-  - Adicionar suporte a múltiplos usuários (familiares).
-
-  - Implementar funcionalidades de gestão de famílias, permitindo colaboração entre membros.
-
-  - Fornecer sistema de categorização manual de transações com categorias customizáveis por família.
+- Implementar sistema RBAC.  
+- Suportar múltiplos usuários pertencendo a múltiplas famílias.  
+- Criar funcionalidades de gestão de famílias (convites, permissões, papéis).  
+- Permitir categorização **manual** de transações com categorias definidas por família.
 
 ---
 
@@ -45,23 +56,19 @@ Este documento apresenta o projeto "Gestão Financeira Inteligente com Open Fina
 
 ## Tema do Projeto
 
-- Uma aplicação web para gestão financeira pessoal e familiar que utiliza Open Finance para conectar contas bancárias de múltiplos usuários, permitindo a agregação de transações em dashboards familiares. Os usuários podem categorizar suas despesas manualmente, com base nas categorias definidas pelos administradores das famílias. A aplicação inclui um sistema de controle de acesso baseado em papéis, garantindo que apenas administradores possam gerenciar membros e configurações da família, enquanto visualizadores podem apenas visualizar e categorizar suas próprias transações. A solução visa facilitar a colaboração segura na gestão financeira entre membros da família, proporcionando uma visão clara e interativa dos gastos e receitas.
+Aplicação web que utiliza Open Finance para conectar e agregar contas bancárias familiares, permitindo categorização manual de transações, dashboards financeiros e colaboração entre membros com permissões distintas por papel (administrador e visualizador).
 
 ## Problemas a Resolver
 
-- Dificuldade em organizar e visualizar despesas de múltiplas contas bancárias de forma agregada para famílias.
-
-- Falta de ferramentas que permitam colaboração segura na gestão financeira familiar.
-
-- Necessidade de categorização eficiente de transações com categorias customizáveis por família.
+- Dificuldade em consolidar informações de múltiplas contas bancárias de uma família em um só lugar.  
+- Falta de ferramentas colaborativas seguras para gestão financeira familiar.  
+- Categorização de despesas pouco estruturada e difícil de analisar sem um sistema de categorias consistente.
 
 ## Limitações
 
-- O sistema não cobre investimentos ou planejamento financeiro complexo.
-
-- Depende dos bancos suportados pelo Open Finance ou conectores diretos do Pluggy.
-
-- A categorização é manual, exigindo que os usuários classifiquem suas transações.
+- O sistema não cobre investimentos ou planejamento financeiro complexo.  
+- Depende dos bancos suportados pelo Open Finance e conectores do Pluggy.  
+- A categorização é manual (não há módulo de machine learning na implementação atual).
 
 ---
 
@@ -69,164 +76,156 @@ Este documento apresenta o projeto "Gestão Financeira Inteligente com Open Fina
 
 ## 3.1. Requisitos de Software
 
-### Lista de Requisitos
+### Funcionais (RF)
 
-**Funcionais (RF):**
+- **RF01:** Registrar novos usuários com email e senha.  
+- **RF02:** Login com email e senha, gerando token JWT.  
+- **RF03:** Conectar contas bancárias via PluggyAI.  
+- **RF04:** Extrair e armazenar transações bancárias periodicamente.  
+- **RF05:** Criar famílias.  
+- **RF06:** Administradores convidam usuários para famílias via email.  
+- **RF07:** Usuários aceitam convites para ingressar em famílias.  
+- **RF08:** Usuários podem pertencer a múltiplas famílias.  
+- **RF09:** Administradores definem categorias de despesas/receitas da família.  
+- **RF10:** Usuários realizam categorização manual de transações.  
+- **RF11:** O sistema fornece dashboards familiares com transações agregadas (income/expense).  
+- **RF12:** O sistema gera gráficos interativos de despesas por categoria, período ou conta.  
+- **RF13:** O sistema lista extratos com filtros e buscas.  
+- **RF14:** Implementar RBAC (papéis administrador e visualizador).  
+- **RF15:** Administradores gerenciam membros, papéis e categorias.  
+- **RF16:** Usuários com papel visualizador acessam dashboards e categorizam apenas suas próprias transações.
 
-- RF01: O sistema deve permitir registro de novos usuários com email e senha.  
+### Não-Funcionais (RNF)
 
-- RF02: O sistema deve permitir login com email e senha, retornando um token JWT.  
+- **RNF01:** Gráficos devem carregar em até 7 segundos com 100 transações (alvo inicial de performance).  
+- **RNF02:** Autenticação segura com JWT e senhas criptografadas.  
+- **RNF03:** Interface responsiva (desktop e mobile).  
+- **RNF04:** Dados estruturados armazenados em MySQL.  
+- **RNF05:** Privacidade garantida entre famílias (usuários não veem dados de outras famílias).
 
-- RF03: O sistema deve conectar contas bancárias via Open Finance usando PluggyAI.  
+---
 
-- RF04: O sistema deve extrair e armazenar transações bancárias periodicamente.  
+# 3.2. Diagrama de Casos de Uso (UML)
 
-- RF05: O sistema deve permitir criar famílias.  
+![Picture1](https://github.com/user-attachments/assets/27fbdbbf-0fc5-410f-b092-843961a7110d)
 
-- RF06: Administradores devem convidar usuários para famílias via email.  
+---
 
-- RF07: Usuários devem aceitar convites para ingressar em famílias.  
+# 3.3. Fluxograma de Atividade
 
-- RF08: Usuários podem pertencer a múltiplas famílias.  
+<img width="649" height="445" alt="fluxatv" src="https://github.com/user-attachments/assets/491f46d6-a43e-4840-a2b6-6d4f2a5495ab" />
 
-- RF09: Administradores devem definir categorias de despesas para a família.  
+---
 
-- RF10: Usuários devem categorizar transações manualmente.  
+# 3.4. Considerações de Design
 
-- RF11: O sistema deve fornecer dashboards familiares com transações agregadas (income/expense).  
+### Escolhas de Design
 
-- RF12: O sistema deve gerar gráficos interativos de despesas por categoria, período ou conta.  
+- **Frontend:** NextJS (SSR para SEO e boa performance).  
+- **Backend:** Spring Boot (robusto, escalável, APIs REST).  
+- **Banco de Dados:** MySQL (usuários, famílias, contas, transações, categorias, orçamentos, notificações).  
+- **Integração bancária:** PluggyAI SDK para conexão com instituições financeiras.  
+- **Observabilidade:** OpenTelemetry + Prometheus/Grafana + SonarQube.
 
-- RF13: O sistema deve listar extratos detalhados com filtros e buscas.  
+---
 
-- RF14: O sistema deve implementar RBAC com papéis administrador (gerenciamento total) e visualizador (acesso limitado).  
+# 3.5. Visão Inicial da Arquitetura
 
-- RF15: Administradores devem gerenciar membros, papéis e categorias.  
+- **Frontend:**  
+  - NextJS (React) consumindo APIs REST do backend.  
+  - Autenticação via JWT (token armazenado no cliente).  
 
-- RF16: Visualizadores devem visualizar dashboards e categorizar apenas suas transações.
+- **Backend:**  
+  - Spring Boot com módulos de autenticação, gestão de famílias, categorias, transações, orçamentos e integração com Pluggy.  
+  - RBAC implementado em cima de roles e relação usuário–família.
 
-**Não-Funcionais (RNF):**
+- **Banco de Dados:**  
+  - MySQL armazenando dados relacionais de usuários, famílias, membros, contas, transações, categorias, orçamentos e notificações.
 
-- RNF01: Gráficos devem carregar em até 3 segundos com 1000 transações.  
+- **Integrações:**  
+  - PluggyAI para Open Finance.  
+  - Serviço de email (SMTP) para envio de convites e notificações.
 
-- RNF02: Autenticação segura com JWT e criptografia.  
+---
 
-- RNF03: Interface responsiva (desktop e mobile).  
+# 3.6. Modelos C4
 
-- RNF04: Dados estruturados em MySQL para escalabilidade.  
+## Diagrama do Modelo C4 – Contexto
 
-- RNF05: Privacidade garantida entre famílias.
+<img width="508" height="675" alt="c4context" src="https://github.com/user-attachments/assets/1aa49e7b-9551-4606-abc5-58790c661dab" />
 
-### Diagrama de Casos de Uso (UML)
+*(O diagrama permanece válido, apenas interpretando “Banco de Dados” como MySQL em vez de múltiplos bancos.)*
 
-**Atores:** Usuário Administrador, Usuário
+---
 
-**Casos de Uso:**
+# 3.7. Stack Tecnológica
 
-![image](https://github.com/user-attachments/assets/a99e8c92-1dd5-432c-863e-fbbd537a38ef)
+- **Linguagens:**  
+  - JavaScript/TypeScript (frontend).  
+  - Java (backend).
 
-## 3.2 Fluxograma de Atividade
+- **Frameworks e Bibliotecas:**  
+  - NextJS, React.  
+  - Spring Boot, Spring Security, JPA/Hibernate.  
+  - Pluggy SDK (integração Open Finance).  
+  - Chart.js/Recharts (gráficos).  
 
-![image](https://github.com/user-attachments/assets/d48a5703-5a15-4801-acde-bbefb0c9aca8)
+- **Banco de Dados:**  
+  - MySQL.
 
-## 3.3. Considerações de Design
+- **Ferramentas e Infraestrutura:**  
+  - Docker e docker-compose.  
+  - AWS (EC2, RDS, S3) para deploy futuro.  
+  - GitHub Actions (CI/CD).  
+  - SonarQube (qualidade de código).  
+  - Jira, GitHub, Confluence (gestão e documentação).
 
-**Escolhas de Design:**
+---
 
-- **Frontend:** NextJS (SSR para SEO e performance).  
+# 3.8. Considerações de Segurança
 
-- **Backend:** Spring Boot (APIs REST robustas).  
-
-- **Bancos:** MySQL (dados estruturados).  
-
-### Visão Inicial da Arquitetura
-
-- **Arquitetura:**  
-
-  - Frontend: NextJS (React).  
-
-  - Backend: Spring Boot (APIs REST).  
-
-  - Banco: MySQL (SQL).  
-
-  - Integração: PluggyAI SDK.
-
-- **Modelos C4:**  
-
-  - **Contexto:** Usuários acessam o sistema via web, conectam bancos via PluggyAI, visualizam dashboards familiares.  
-
-  - **Contêineres:** Frontend (NextJS), Backend (Spring Boot), Banco (MySQL).  
-
-  - **Componentes:** Módulos de autenticação, integração bancária, gestão de famílias, categorização, dashboards.  
-
-  - **Código:** Detalhamento em classes/interfaces no backend.
-
-## 3.4. Stack Tecnológica
-
-- **Linguagens:** JavaScript/TypeScript (frontend), Java (backend).  
-
-- **Frameworks e Bibliotecas:** NextJS, Spring Boot, Spring Security, JPA/Hibernate, Pluggy SDK, Chart.js, Axios.  
-
-- **Bancos de Dados:** MySQL.  
-
-- **Ferramentas:** Docker, AWS (EC2, RDS, S3), GitHub Actions (CI/CD), SonarQube, Jira, GitHub, Confluence.
-
-## 3.5. Considerações de Segurança
-
-- **Autenticação:** JWT com validação em endpoints.  
-
-- **Criptografia:** AES-256 para dados sensíveis.  
-
-- **RBAC:** Isolamento de permissões por família (administrador vs. visualizador).  
-
-- **Mitigação:** Proteção contra SQL Injection, XSS, CSRF.  
-
-- **Privacidade:** Dados de uma família não acessíveis por outra.
+- Autenticação com JWT e senhas armazenadas de forma segura (hash).  
+- Criptografia de dados sensíveis em trânsito (HTTPS).  
+- RBAC por família (admin vs visualizador).  
+- Proteções contra SQL Injection, XSS e CSRF.  
+- Isolamento lógico entre famílias: um usuário só acessa dados das famílias às quais pertence.
 
 ---
 
 # 4. Próximos Passos
 
-- **Portfólio I:** Prototipagem da interface e backend básico (Maio-Julho 2025).
+### Portfólio I
 
-- **Portfólio II:** Melhorias e deploy na AWS (Julho-Novembro 2025).
+Prototipagem da interface + backend básico (maio–julho 2025).
 
-**Cronograma:**
+### Portfólio II
 
-- Maio: Requisitos e design.
+Refinamento de funcionalidades, melhorias de observabilidade e deploy em AWS (julho–novembro 2025).
 
-- Junho: Frontend e backend básico.
+### Cronograma SCRUM
 
-- Julho: Testes e ajustes.
-
-- Agosto: Deploy e ajustes finais.
+- Maio: requisitos e design (Sprint 1).  
+- Junho: frontend + backend básico (Sprints 2 e 3).  
+- Julho: integração Open Finance + testes (Sprint 4).  
+- Outubro: deploy final e ajustes (Sprint 5).
 
 ---
 
 # 5. Referências
 
-- [Pluggy API Documentation](https://docs.pluggy.ai/)
-
-- [NextJS Documentation](https://nextjs.org/docs)
-
-- [MySQL Documentation](https://dev.mysql.com/doc/)
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-
-- [Chart.js](https://www.chartjs.org/)
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-
-- [AWS Documentation](https://aws.amazon.com/documentation/)
-
-- [Open Finance Brasil](https://openfinancebrasil.org.br/)
+- `https://docs.pluggy.ai`  
+- `https://nextjs.org/docs`  
+- `https://dev.mysql.com/doc`  
+- `https://spring.io/projects/spring-boot`  
+- `https://www.chartjs.org`  
+- `https://docs.github.com/en/actions`  
+- `https://aws.amazon.com/documentation`  
+- `https://openfinancebrasil.org.br`
 
 ---
 
-# 7. Avaliações de Professores
+# 6. Avaliações de Professores
 
-- **Considerações Professor/a:** ___________________________
-
-- **Considerações Professor/a:** ___________________________
-
-- **Considerações Professor/a:** ___________________________
+- Considerações: _____________________________________________  
+- Considerações: _____________________________________________  
+- Considerações: _____________________________________________

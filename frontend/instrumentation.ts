@@ -2,6 +2,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 
 // Parse headers if provided
 const parseHeaders = (headersString?: string): Record<string, string> => {
@@ -41,6 +42,7 @@ const getBaseUrl = (endpoint?: string): string => {
 
 const baseUrl = getBaseUrl(process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
 const headers = parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS);
+const serviceName = process.env.OTEL_SERVICE_NAME || 'fin-fam-frontend';
 
 const traceExporter = new OTLPTraceExporter({
   url: `${baseUrl}/v1/traces`,
@@ -52,13 +54,31 @@ const metricExporter = new OTLPMetricExporter({
   headers: headers,
 });
 
-export const sdk = new NodeSDK({
-  serviceName: process.env.OTEL_SERVICE_NAME || 'fin-fam-frontend',
+const sdk = new NodeSDK({
+  serviceName: serviceName,
   traceExporter: traceExporter,
   metricReader: new PeriodicExportingMetricReader({
     exporter: metricExporter,
     exportIntervalMillis: 10000, // Export metrics every 10 seconds
   }),
+  instrumentations: [
+    getNodeAutoInstrumentations({
+      // Disable fs instrumentation to reduce noise
+      '@opentelemetry/instrumentation-fs': {
+        enabled: false,
+      },
+    }),
+  ],
 });
 
-sdk.start();
+// Export register function for Next.js
+export async function register() {
+  // Only start SDK if we have an endpoint configured
+  if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
+    sdk.start();
+    console.log(`[OpenTelemetry] Started with service name: ${serviceName}`);
+    console.log(`[OpenTelemetry] Endpoint: ${baseUrl}`);
+  } else {
+    console.log('[OpenTelemetry] No endpoint configured, skipping initialization');
+  }
+}

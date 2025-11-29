@@ -26,6 +26,9 @@ RUN npm install -g pnpm \
 
 COPY --from=builder /app ./
 
+ENV NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register"
+
+
 EXPOSE 3000
 
 CMD ["pnpm", "start"]

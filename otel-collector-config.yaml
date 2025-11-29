@@ -5,8 +5,8 @@ receivers:
       http:
 
 exporters:
-  otlp/grafana:
-    endpoint: otlp-gateway-prod-sa-east-1.grafana.net:443
+  otlphttp/grafana:
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
     headers:
       Authorization: ${OTEL_EXPORTER_OTLP_HEADERS}
 
@@ -14,4 +14,4 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [otlp/grafana]
+      exporters: [otlphttp/grafana]

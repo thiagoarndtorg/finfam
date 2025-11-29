@@ -28,7 +28,8 @@ jobs:
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
           FRONTEND_URL=${{ vars.FRONTEND_URL }}
-
+          NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+          
           # OTEL_SERVICE_NAME=teste
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ vars.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS="${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}"

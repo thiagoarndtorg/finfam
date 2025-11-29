@@ -75,7 +75,7 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://backend:8081
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
 
       # Observability
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME_FRONTEND}

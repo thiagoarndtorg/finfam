@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { AccountsResponse } from "@/types/account-type";
 import { Transaction } from "@/types/transaction-type";
 import { Notification } from "@/types/notification-type";
+import { toastI18n } from "@/lib/toast-i18n";
 
 // Define generic hook return type
 interface ApiState<T> {
@@ -43,14 +44,14 @@ export function useApi<TData, TArgs extends any[]>(
     async (...args: TArgs | [...TArgs, ExecuteOptions]): Promise<TData | null> => {
       // Check if last argument is an options object
       const lastArg = args[args.length - 1];
-      const options: ExecuteOptions | undefined = 
-        lastArg && typeof lastArg === 'object' && 'suppressToast' in lastArg 
+      const options: ExecuteOptions | undefined =
+        lastArg && typeof lastArg === 'object' && 'suppressToast' in lastArg
           ? (lastArg as ExecuteOptions)
           : undefined;
-      
+
       // Extract actual API method arguments (excluding options)
       const methodArgs = options ? args.slice(0, -1) as TArgs : args as TArgs;
-      
+
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
@@ -67,7 +68,7 @@ export function useApi<TData, TArgs extends any[]>(
 
         // 🔥 Show toast notification with the error message (unless suppressed)
         if (!options?.suppressToast) {
-          toast.error(apiError.message || "Something went wrong!");
+          toastI18n.error("toasts.error.apiError");
         }
 
         throw apiError;
@@ -394,31 +395,31 @@ export function useFamilyBudgets() {
       }),
     []
   );
-  return useApi<Array<{id: number; familyId: number; categoryId?: number; userId?: number; budgetType: string; year: number; month: number; amount: number; categoryName?: string; userName?: string}>, [number, number, number]>(apiMethod);
+  return useApi<Array<{ id: number; familyId: number; categoryId?: number; userId?: number; budgetType: string; year: number; month: number; amount: number; categoryName?: string; userName?: string }>, [number, number, number]>(apiMethod);
 }
 
 export function useSaveBudgets() {
   const apiMethod = useCallback(
-    (bulkRequest: {familyId: number; year: number; month: number; budgets: Array<{categoryId?: number; userId?: number; budgetType: string; amount: number}>}) =>
+    (bulkRequest: { familyId: number; year: number; month: number; budgets: Array<{ categoryId?: number; userId?: number; budgetType: string; amount: number }> }) =>
       apiClient.post("/budgets/bulk", bulkRequest).then((res: any) => {
         console.log("Save budgets response:", res);
         return res;
       }),
     []
   );
-  return useApi<Array<any>, [{familyId: number; year: number; month: number; budgets: Array<{categoryId?: number; userId?: number; budgetType: string; amount: number}>}]>(apiMethod);
+  return useApi<Array<any>, [{ familyId: number; year: number; month: number; budgets: Array<{ categoryId?: number; userId?: number; budgetType: string; amount: number }> }]>(apiMethod);
 }
 
 export function useDeleteBudget() {
   const apiMethod = useCallback(
-    ({id, familyId}: {id: number; familyId: number}) =>
+    ({ id, familyId }: { id: number; familyId: number }) =>
       apiClient.delete(`/budgets/${id}?familyId=${familyId}`).then(() => {
         console.log("Delete budget response: success");
         return undefined;
       }),
     []
   );
-  return useApi<void, [{id: number; familyId: number}]>(apiMethod);
+  return useApi<void, [{ id: number; familyId: number }]>(apiMethod);
 }
 
 export function useFamilyNotifications() {
@@ -456,7 +457,7 @@ export function useUserFamilies() {
       }),
     []
   );
-  return useApi<Array<{id: number; name: string; createdBy: number}>, []>(apiMethod);
+  return useApi<Array<{ id: number; name: string; createdBy: number }>, []>(apiMethod);
 }
 
 export function useFamilyMembers() {
@@ -468,55 +469,55 @@ export function useFamilyMembers() {
       }),
     []
   );
-  return useApi<Array<{id: number; userId: number; username: string; email: string; avatarUrl: string; role: string; status: string}>, [number]>(apiMethod);
+  return useApi<Array<{ id: number; userId: number; username: string; email: string; avatarUrl: string; role: string; status: string }>, [number]>(apiMethod);
 }
 
 export function useInviteMember() {
   const apiMethod = useCallback(
-    ({familyId, email, role}: {familyId: number; email: string; role: string}) =>
+    ({ familyId, email, role }: { familyId: number; email: string; role: string }) =>
       apiClient.post(`/family/${familyId}/members/invite`, { email, role }).then((res: any) => {
         console.log("Invite member response:", res);
         return res;
       }),
     []
   );
-  return useApi<void, [{familyId: number; email: string; role: string}]>(apiMethod);
+  return useApi<void, [{ familyId: number; email: string; role: string }]>(apiMethod);
 }
 
 export function useUpdateMemberRole() {
   const apiMethod = useCallback(
-    ({familyId, memberId, role}: {familyId: number; memberId: number; role: string}) =>
+    ({ familyId, memberId, role }: { familyId: number; memberId: number; role: string }) =>
       apiClient.put(`/family/${familyId}/members/${memberId}/role`, { role }).then((res: any) => {
         console.log("Update member role response:", res);
         return res;
       }),
     []
   );
-  return useApi<void, [{familyId: number; memberId: number; role: string}]>(apiMethod);
+  return useApi<void, [{ familyId: number; memberId: number; role: string }]>(apiMethod);
 }
 
 export function useRemoveMember() {
   const apiMethod = useCallback(
-    ({familyId, memberId}: {familyId: number; memberId: number}) =>
+    ({ familyId, memberId }: { familyId: number; memberId: number }) =>
       apiClient.delete(`/family/${familyId}/members/${memberId}`).then((res: any) => {
         console.log("Remove member response:", res);
         return res;
       }),
     []
   );
-  return useApi<void, [{familyId: number; memberId: number}]>(apiMethod);
+  return useApi<void, [{ familyId: number; memberId: number }]>(apiMethod);
 }
 
 export function useResendInvite() {
   const apiMethod = useCallback(
-    ({familyId, memberId}: {familyId: number; memberId: number}) =>
+    ({ familyId, memberId }: { familyId: number; memberId: number }) =>
       apiClient.post(`/family/${familyId}/members/${memberId}/resend-invite`, {}).then((res: any) => {
         console.log("Resend invite response:", res);
         return res;
       }),
     []
   );
-  return useApi<void, [{familyId: number; memberId: number}]>(apiMethod);
+  return useApi<void, [{ familyId: number; memberId: number }]>(apiMethod);
 }
 
 export function useCurrentUserRole() {

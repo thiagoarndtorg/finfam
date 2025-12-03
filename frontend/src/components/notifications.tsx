@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useFamilyNotifications, useDeleteNotification } from "@/hooks/use-api"
 import { useFamily } from "@/contexts/family-context"
+import { useI18n } from "@/contexts/i18n-context"
 import { format } from "date-fns"
 import { Notification } from "@/types/notification-type"
 import toast from "react-hot-toast"
@@ -15,6 +16,7 @@ import toast from "react-hot-toast"
 export function Notifications() {
   const [isOpen, setIsOpen] = useState(false)
   const { familyId, notificationRefreshTrigger, refreshNotifications } = useFamily()
+  const { t } = useI18n()
   const { data: notifications, isLoading, execute } = useFamilyNotifications()
   const { execute: deleteNotification } = useDeleteNotification()
   const [localNotifications, setLocalNotifications] = useState<Notification[]>([])
@@ -56,10 +58,10 @@ export function Notifications() {
         refreshNotifications()
       }
       
-      toast.success("Notificação removida")
+      toast.success(t("toasts.success.notificationRemoved"))
     } catch (error: any) {
       console.error("Error deleting notification:", error)
-      toast.error(error?.message || "Erro ao remover notificação")
+      toast.error(error?.message || t("toasts.error.notificationRemove"))
       
       // Refresh to get the correct state
       try {

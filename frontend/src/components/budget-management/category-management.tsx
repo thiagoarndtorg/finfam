@@ -16,10 +16,12 @@ import {
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useFamily } from "@/contexts/family-context"
+import { useI18n } from "@/contexts/i18n-context"
 import { useFamilyCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/use-api"
 
 export function CategoryManagement() {
   const { familyId, categories, setCategories } = useFamily()
+  const { t } = useI18n()
   const { data: categoriesData, execute: fetchCategories } = useFamilyCategories()
   const { execute: createCategory } = useCreateCategory()
   const { execute: updateCategory } = useUpdateCategory()
@@ -58,10 +60,10 @@ export function CategoryManagement() {
         setCategories([...categories, result])
         setNewCategory({ name: "", color: "#0ea5e9", icon: "📁", isIncome: false })
         setIsAddDialogOpen(false)
-        toast.success("Category added successfully")
+        toast.success(t("toasts.success.categoryAdded"))
       }
     } catch (error) {
-      toast.error("Failed to add category")
+      toast.error(t("toasts.error.categoryAdd"))
     }
   }
 
@@ -79,10 +81,10 @@ export function CategoryManagement() {
       if (result) {
         setCategories(categories.map((category) => (category.id === currentCategory.id ? result : category)))
         setIsEditDialogOpen(false)
-        toast.success("Category updated successfully")
+        toast.success(t("toasts.success.categoryUpdated"))
       }
     } catch (error) {
-      toast.error("Failed to update category")
+      toast.error(t("toasts.error.categoryUpdate"))
     }
   }
 
@@ -91,9 +93,9 @@ export function CategoryManagement() {
       await deleteCategory({ id: currentCategory.id, familyId })
       setCategories(categories.filter((category) => category.id !== currentCategory.id))
       setIsDeleteDialogOpen(false)
-      toast.success("Category deleted successfully")
+      toast.success(t("toasts.success.categoryDeleted"))
     } catch (error) {
-      toast.error("Failed to delete category")
+      toast.error(t("toasts.error.categoryDelete"))
     }
   }
 
@@ -112,7 +114,7 @@ export function CategoryManagement() {
       <div className="flex justify-end">
         <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Category
+          {t("categories.add")}
         </Button>
       </div>
 
@@ -120,10 +122,10 @@ export function CategoryManagement() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">Color</TableHead>
-              <TableHead className="w-[50px]">Icon</TableHead>
-              <TableHead>Category Name</TableHead>
-              <TableHead className="text-right w-[120px]">Actions</TableHead>
+              <TableHead className="w-[50px]">{t("categories.color")}</TableHead>
+              <TableHead className="w-[50px]">{t("categories.icon")}</TableHead>
+              <TableHead>{t("categories.categoryName")}</TableHead>
+              <TableHead className="text-right w-[120px]">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,11 +142,11 @@ export function CategoryManagement() {
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(category)}>
                       <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
+                      <span className="sr-only">{t("common.edit")}</span>
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(category)}>
                       <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
+                      <span className="sr-only">{t("common.delete")}</span>
                     </Button>
                   </div>
                 </TableCell>
@@ -158,21 +160,21 @@ export function CategoryManagement() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
-            <DialogDescription>Create a new expense category to organize your spending</DialogDescription>
+            <DialogTitle>{t("categories.add")}</DialogTitle>
+            <DialogDescription>{t("categories.addDescription")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="category-name">Category Name</Label>
+              <Label htmlFor="category-name">{t("categories.categoryName")}</Label>
               <Input
                 id="category-name"
                 value={newCategory.name}
                 onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                placeholder="e.g., Subscriptions"
+                placeholder={t("categories.categoryNamePlaceholder")}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="category-color">Color</Label>
+              <Label htmlFor="category-color">{t("categories.color")}</Label>
               <div className="flex gap-2">
                 <Input
                   id="category-color"
@@ -196,10 +198,10 @@ export function CategoryManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleAddCategory} disabled={!newCategory.name}>
-              Add Category
+              {t("categories.add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -210,12 +212,12 @@ export function CategoryManagement() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Category</DialogTitle>
-              <DialogDescription>Update the details of this expense category</DialogDescription>
+              <DialogTitle>{t("categories.edit")}</DialogTitle>
+              <DialogDescription>{t("categories.editDescription")}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-category-name">Category Name</Label>
+                <Label htmlFor="edit-category-name">{t("categories.categoryName")}</Label>
                 <Input
                   id="edit-category-name"
                   value={currentCategory.name}
@@ -223,7 +225,7 @@ export function CategoryManagement() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-category-color">Color</Label>
+                <Label htmlFor="edit-category-color">{t("categories.color")}</Label>
                 <div className="flex gap-2">
                   <Input
                     id="edit-category-color"
@@ -236,7 +238,7 @@ export function CategoryManagement() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-category-icon">Icon (Emoji)</Label>
+                <Label htmlFor="edit-category-icon">{t("categories.icon")} ({t("categories.emoji")})</Label>
                 <Input
                   id="edit-category-icon"
                   value={currentCategory.icon}
@@ -246,10 +248,10 @@ export function CategoryManagement() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button onClick={handleEditCategory} disabled={!currentCategory.name}>
-                Save Changes
+                {t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -261,9 +263,9 @@ export function CategoryManagement() {
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Category</DialogTitle>
+              <DialogTitle>{t("categories.delete")}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this category? This action cannot be undone.
+                {t("categories.deleteConfirm")}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
@@ -275,10 +277,10 @@ export function CategoryManagement() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button variant="destructive" onClick={handleDeleteCategory}>
-                Delete Category
+                {t("categories.delete")}
               </Button>
             </DialogFooter>
           </DialogContent>

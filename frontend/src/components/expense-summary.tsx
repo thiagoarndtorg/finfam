@@ -10,7 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useFamily } from "@/contexts/family-context";
+import { useI18n } from "@/contexts/i18n-context";
 import {
   startOfWeek,
   startOfMonth,
@@ -25,10 +28,12 @@ const COLORS = ["#0ea5e9", "#8b5cf6", "#f43f5e", "#10b981", "#f59e0b", "#6366f1"
 
 export function ExpenseSummary() {
   const [timeframe, setTimeframe] = useState("month");
+  const [showIncome, setShowIncome] = useState(false);
   const { familyId, filteredTransactions: contextTransactions, categories } = useFamily();
+  const { t } = useI18n();
 
-  // Build expenses per category from context transactions
-  const { chartData, totalExpenses } = useMemo(() => {
+  // Build expenses or income per category from context transactions
+  const { chartData, totalAmount } = useMemo(() => {
     // Filter by selected timeframe
     const now = new Date();
     let start: Date;
@@ -49,8 +54,9 @@ export function ExpenseSummary() {
     }
 
     // Use context transactions only - filter by type and timeframe
-    const expenseTx = contextTransactions
-      .filter((t: any) => t.transactionType === "EXPENSE")
+    const transactionType = showIncome ? "INCOME" : "EXPENSE";
+    const filteredTx = contextTransactions
+      .filter((t: any) => t.transactionType === transactionType)
       .filter((t: any) => {
         const date = typeof t.transactionDate === "string" ? parseISO(t.transactionDate) : new Date(t.transactionDate);
         if (Number.isNaN(date.getTime())) return false;
@@ -59,7 +65,7 @@ export function ExpenseSummary() {
 
     // Group by category name
     const map = new Map<string, number>();
-    for (const t of expenseTx) {
+    for (const t of filteredTx) {
       const categoryName = t.category?.name || "Uncategorized";
       const amount = Math.abs(Number(t.amount || 0));
       map.set(categoryName, (map.get(categoryName) || 0) + amount);
@@ -69,34 +75,50 @@ export function ExpenseSummary() {
     const total = entries.reduce((s, [, v]) => s + v, 0);
     const data = entries.map(([name, value], idx) => ({ name, value, color: COLORS[idx % COLORS.length] }));
 
-    return { chartData: data, totalExpenses: total };
-  }, [familyId, contextTransactions, timeframe]);
+    return { chartData: data, totalAmount: total };
+  }, [familyId, contextTransactions, timeframe, showIncome]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-medium">Expense Summary</CardTitle>
-        <Select value={timeframe} onValueChange={setTimeframe}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="Select timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="quarter">This Quarter</SelectItem>
-            <SelectItem value="year">This Year</SelectItem>
-          </SelectContent>
-        </Select>
+        <CardTitle className="text-xl font-medium">
+          {showIncome ? t("dashboard.incomeSummary") : t("dashboard.expenseSummary")}
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="income-toggle" className="text-sm text-muted-foreground">
+              {showIncome ? t("transactions.income") : t("transactions.expense")}
+            </Label>
+            <Switch
+              id="income-toggle"
+              checked={showIncome}
+              onCheckedChange={setShowIncome}
+            />
+          </div>
+          <Select value={timeframe} onValueChange={setTimeframe}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder={t("common.filter")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">{t("dashboard.thisWeek")}</SelectItem>
+              <SelectItem value="month">{t("dashboard.thisMonth")}</SelectItem>
+              <SelectItem value="quarter">{t("dashboard.thisQuarter")}</SelectItem>
+              <SelectItem value="year">{t("dashboard.thisYear")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
         {!familyId ? (
           <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground">No family selected</p>
+            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
           </div>
         ) : (
           <>
-            <div className="text-2xl font-bold mb-4">R$ {totalExpenses.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mb-6">Total expenses for {timeframe}</p>
+            <div className="text-2xl font-bold mb-4">R$ {totalAmount.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mb-6">
+              {showIncome ? t("dashboard.totalIncome") : t("dashboard.totalExpenses")}
+            </p>
 
             <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">

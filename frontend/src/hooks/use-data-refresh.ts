@@ -1,10 +1,12 @@
 import { useCallback } from "react";
 import { useFamilyFinancials, useBankStatement } from "./use-api";
 import { useFamily } from "@/contexts/family-context";
+import { useI18n } from "@/contexts/i18n-context";
 import { toast } from "sonner";
 
 export function useDataRefresh() {
   const { familyId } = useFamily();
+  const { t } = useI18n();
   const { execute: refreshFamilyFinancials } = useFamilyFinancials();
   const { execute: refreshBankStatement } = useBankStatement();
 
@@ -23,10 +25,10 @@ export function useDataRefresh() {
       // For now, we'll focus on family financials which includes transactions
       
       console.log("Data refresh completed successfully");
-      toast.success("Data updated successfully");
+      toastI18n.success("toasts.success.dataUpdated");
     } catch (error) {
       console.error("Failed to refresh data:", error);
-      toast.error("Failed to refresh data");
+      toastI18n.error("toasts.error.dataRefresh");
     }
   }, [familyId, refreshFamilyFinancials]);
 

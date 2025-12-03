@@ -12,6 +12,7 @@ import {
 import { BanknoteIcon as Bank, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic"; // Add this
 import { useConnectToken, useBankStatement } from "@/hooks/use-api";
+import { useI18n } from "@/contexts/i18n-context";
 import { toast } from "sonner";
 
 const PluggyConnect = dynamic(
@@ -23,6 +24,7 @@ export function ConnectBankButton() {
   const [showWidget, setShowWidget] = useState(false);
   const [itemId, setItemId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<any>([]);
+  const { t } = useI18n();
   // API hook
   const connectTokenApi = useConnectToken();
   const bankStatement = useBankStatement();
@@ -63,7 +65,7 @@ export function ConnectBankButton() {
     console.log("Closing widget...");
     setShowWidget(false);
     if (!itemId) {
-      toast.info("Bank connection was cancelled");
+      toast.info(t("toasts.info.bankCancelled"));
     }
   };
   return (
@@ -85,7 +87,7 @@ export function ConnectBankButton() {
             onSuccess={handleConnectSuccess}
             onError={(error) => {
               console.error("Pluggy error:", error);
-              toast.error("Error connecting to bank: " + error.message);
+              toast.error(t("toasts.error.connectBank") + ": " + error.message);
               setShowWidget(false);
             }}
             onClose={handleClose}

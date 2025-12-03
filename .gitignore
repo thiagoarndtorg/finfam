@@ -54,6 +54,7 @@ frontend/.env*
 frontend/.DS_Store
 frontend/Dockerfile.local
 frontend/.dockerignore
+frontend/coverage
 # ====================================================
 # ☕ BACKEND (Spring Boot - Gradle or Maven)
 # ====================================================

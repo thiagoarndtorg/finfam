@@ -1,9 +1,10 @@
 "use client";
 
-import { useFamilyFinancials, useAutoSyncAccountsSimple, useUserFamilies, useCurrentUserRole, useFamilyMembers, useFamilyTransactions } from "@/hooks/use-api";
+import { useFamilyFinancials, useUserFamilies, useCurrentUserRole, useFamilyMembers, useFamilyTransactions } from "@/hooks/use-api";
 import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from "react";
 import { Transaction } from "@/types/transaction-type";
 import { AccountsResponse } from "@/types/account-type";
+import { toastI18n } from "@/lib/toast-i18n";
 import toast from "react-hot-toast";
 import { apiClient } from "@/middleware/api-client";
 import { ApiError } from "@/middleware/api-client";
@@ -108,7 +109,6 @@ export function FamilyProvider({
   };
 
   const { execute } = useFamilyFinancials();
-  const { execute: autoSyncAccounts } = useAutoSyncAccountsSimple();
 
   // Função para trocar de família
   const switchFamily = (newFamilyId: number) => {
@@ -142,22 +142,13 @@ export function FamilyProvider({
     setError(null);
 
     try {
-      // First, sync all connected bank accounts to get latest balances
-      try {
-        console.log("Syncing bank accounts for family:", familyId);
-        await autoSyncAccounts(familyId);
-      } catch (syncError) {
-        console.warn("Failed to sync bank accounts:", syncError);
-        // Continue with refresh even if sync fails
-      }
-
-      // Then fetch updated family data
+      // Fetch updated family data
       const result = await execute(familyId);
       console.log("Refreshed family data:", result);
       setFamilyData(result);
     } catch (error) {
       setError(error instanceof Error ? error : new Error("Unknown error"));
-      toast.error("Erro ao atualizar dados da família.");
+      toastI18n.error("toasts.error.familyUpdate");
       console.error("Refresh family data error:", error);
       throw error; // Re-throw to let calling component handle it
     } finally {
@@ -225,16 +216,7 @@ export function FamilyProvider({
       setError(null);
 
       try {
-        // First, sync all connected bank accounts to get latest balances
-        try {
-          console.log("Initial sync of bank accounts for family:", familyId);
-          await autoSyncAccounts(familyId);
-        } catch (syncError) {
-          console.warn("Failed to sync bank accounts on initial load:", syncError);
-          // Continue with data fetch even if sync fails
-        }
-
-        // Then fetch family data
+        // Fetch family data
         const result = await execute(familyId, { suppressToast: true });
         console.log(result);
         if (result) {
@@ -252,7 +234,7 @@ export function FamilyProvider({
           setFamilyData({ accounts: [] } as AccountsResponse);
         } else {
           setError(error instanceof Error ? error : new Error("Unknown error"));
-          toast.error("Erro ao retornar informações da conta.");
+          toastI18n.error("toasts.error.accountInfo");
           console.error("Retrieved account data error:", error);
         }
       } finally {
@@ -261,7 +243,7 @@ export function FamilyProvider({
     };
 
     getFamilyFinancials();
-  }, [familyId, execute, autoSyncAccounts]);
+  }, [familyId, execute]);
 
   // Load current user role when familyId changes
   useEffect(() => {

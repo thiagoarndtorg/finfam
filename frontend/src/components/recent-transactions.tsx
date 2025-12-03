@@ -38,6 +38,7 @@ import {
 import { EditTransactionModal } from "./edit-transaction-modal";
 import { DeleteTransactionModal } from "./delete-transaction-modal";
 import { useFamily } from "@/contexts/family-context";
+import { useI18n } from "@/contexts/i18n-context";
 import { useFamilyFinancials, useUpdateTransaction, useDeleteTransaction } from "@/hooks/use-api";
 
 // Start with empty; will load from backend
@@ -52,6 +53,7 @@ export function RecentTransactions() {
     familyData,
     refreshFamilyData,
   } = useFamily();
+  const { t } = useI18n();
   const { data, execute } = useFamilyFinancials();
   const { execute: updateTransactionAPI } = useUpdateTransaction();
   const { execute: deleteTransactionAPI } = useDeleteTransaction();
@@ -83,27 +85,27 @@ export function RecentTransactions() {
     }
 
     setIsLoadingData(true);
-    
+
     if (contextTransactions.length > 0) {
       // Use transactions from context - this is the single source of truth
-      const normalized = contextTransactions.map((t: any) => {
+      const normalized = contextTransactions.map((f: any) => {
         return {
-          id: String(t.id),
-          description: t.description,
-          amount: Math.round(Number(t.amount) * 100), // convert to cents
-          date: t.transactionDate,
-          category: t.category?.name || "Uncategorized",
-          categoryId: t.category?.id,
-          categoryObject: t.category, // Keep full category object for editing
-          account: accountIdToName.get(t.accountId) || `Account ${t.accountId}`,
-          type: t.transactionType === "INCOME" ? "income" : "expense",
+          id: String(f.id),
+          description: f.description,
+          amount: Math.round(Number(f.amount) * 100), // convert to cents
+          date: f.transactionDate,
+          category: f.category?.name || t("transactions.uncategorized"),
+          categoryId: f.category?.id,
+          categoryObject: f.category, // Keep full category object for editing
+          account: accountIdToName.get(f.accountId) || `Account ${f.accountId}`,
+          type: f.transactionType === "INCOME" ? "income" : "expense",
         };
       });
       setTransactions(normalized);
     } else {
       setTransactions([]);
     }
-    
+
     setIsLoadingData(false);
   }, [familyId, contextTransactions, accountIdToName]);
 
@@ -141,11 +143,11 @@ export function RecentTransactions() {
       } else {
         return sortDirection === "asc"
           ? String(a[sortField as keyof typeof a]).localeCompare(
-              String(b[sortField as keyof typeof b])
-            )
+            String(b[sortField as keyof typeof b])
+          )
           : String(b[sortField as keyof typeof b]).localeCompare(
-              String(a[sortField as keyof typeof a])
-            );
+            String(a[sortField as keyof typeof a])
+          );
       }
     });
 
@@ -153,7 +155,7 @@ export function RecentTransactions() {
   const handleEditTransaction = async (updatedTransaction: any) => {
     // Normalize amount: API expects positive amount with transactionType
     const amountValue = Math.abs(updatedTransaction.amount) / 100;
-    
+
     // Update via API and capture the response
     const apiResponse = await updateTransactionAPI({
       id: Number(updatedTransaction.id),
@@ -208,12 +210,12 @@ export function RecentTransactions() {
   return (
     <Card>
       <CardHeader className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
-        <CardTitle className="text-xl font-medium">Recent Transactions</CardTitle>
+        <CardTitle className="text-xl font-medium">{t("dashboard.recentTransactions")}</CardTitle>
         <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search transactions..."
+              placeholder={t("common.search") + "..."}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -222,12 +224,12 @@ export function RecentTransactions() {
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[150px]">
               <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={t("common.category")} />
             </SelectTrigger>
             <SelectContent>
               {filterCategories.map((category) => (
                 <SelectItem key={category} value={category}>
-                  {category === "all" ? "All Categories" : category}
+                  {category === "all" ? t("transactions.allCategories") : category}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -235,12 +237,12 @@ export function RecentTransactions() {
           <Select value={accountFilter} onValueChange={setAccountFilter}>
             <SelectTrigger className="w-[150px]">
               <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Account" />
+              <SelectValue placeholder={t("common.account")} />
             </SelectTrigger>
             <SelectContent>
               {accounts.map((account) => (
                 <SelectItem key={account} value={account}>
-                  {account === "all" ? "All Accounts" : account}
+                  {account === "all" ? t("transactions.allAccounts") : account}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -251,7 +253,7 @@ export function RecentTransactions() {
         {isLoadingData ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="text-sm text-muted-foreground mt-2">Loading transactions...</p>
+            <p className="text-sm text-muted-foreground mt-2">{t("transactions.loading")}</p>
           </div>
         ) : (
           <div className="rounded-md border">
@@ -260,31 +262,31 @@ export function RecentTransactions() {
                 <TableRow>
                   <TableHead className="w-[200px]">
                     <Button variant="ghost" className="p-0" onClick={() => handleSort("description")}>
-                      Description
+                      {t("transactions.description")}
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
                   <TableHead>
                     <Button variant="ghost" className="p-0" onClick={() => handleSort("category")}>
-                      Category
+                      {t("common.category")}
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
                   <TableHead>
                     <Button variant="ghost" className="p-0" onClick={() => handleSort("account")}>
-                      Account
+                      {t("common.account")}
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
                   <TableHead>
                     <Button variant="ghost" className="p-0" onClick={() => handleSort("date")}>
-                      Date
+                      {t("common.date")}
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
                   <TableHead className="text-right">
                     <Button variant="ghost" className="p-0" onClick={() => handleSort("amount")}>
-                      Amount
+                      {t("common.amount")}
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
@@ -295,58 +297,57 @@ export function RecentTransactions() {
                 {filteredTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                      No transactions found
+                      {t("transactions.noTransactions")}
                     </TableCell>
                   </TableRow>
                 ) : (
-                filteredTransactions.map((transaction) => {
-                  console.log(transaction);
-                  return (
-                    <TableRow key={transaction.id}>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell>{transaction.category}</TableCell>
-                      <TableCell>{transaction.account}</TableCell>
-                      <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">
-                        <span
-                          className={`inline-flex items-center ${
-                            transaction.type === "income"
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {transaction.type === "income" ? "+" : "-"}R${" "}
-                          {Math.abs(transaction.amount / 100).toFixed(2)}
-                          {transaction.type === "income" ? (
-                            <ArrowUpRight className="h-4 w-4 ml-1" />
-                          ) : (
-                            <ArrowDownRight className="h-4 w-4 ml-1" />
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingTransaction(transaction)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setDeletingTransaction(transaction)}>
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                  filteredTransactions.map((transaction) => {
+                    console.log(transaction);
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell>{transaction.category}</TableCell>
+                        <TableCell>{transaction.account}</TableCell>
+                        <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <span
+                            className={`inline-flex items-center ${transaction.type === "income"
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-red-600 dark:text-red-400"
+                              }`}
+                          >
+                            {transaction.type === "income" ? "+" : "-"}R${" "}
+                            {Math.abs(transaction.amount / 100).toFixed(2)}
+                            {transaction.type === "income" ? (
+                              <ArrowUpRight className="h-4 w-4 ml-1" />
+                            ) : (
+                              <ArrowDownRight className="h-4 w-4 ml-1" />
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setEditingTransaction(transaction)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                <span>{t("common.edit")}</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDeletingTransaction(transaction)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>{t("common.delete")}</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

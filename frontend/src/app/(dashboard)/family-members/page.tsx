@@ -12,8 +12,10 @@ import { DeleteMemberModal } from "@/components/delete-member-modal"
 import { useFamily } from "@/contexts/family-context"
 import { useFamilyMembers, useInviteMember, useUpdateMemberRole, useRemoveMember, useResendInvite } from "@/hooks/use-api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useI18n } from "@/contexts/i18n-context";
 
 export default function FamilyMembersPage() {
+    const { t } = useI18n();
   const { familyId } = useFamily();
   const [members, setMembers] = useState([])
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
@@ -97,36 +99,36 @@ export default function FamilyMembersPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Family Members</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("family.members")}</h1>
         <Button onClick={() => setIsInviteModalOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
-          Invite Member
+          {t("family.inviteMember")}
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Manage Access</CardTitle>
+          <CardTitle>{t("family.title")}</CardTitle>
           <CardDescription>
-            Invite family members to view and manage your financial data. You can control what they can see and do.
+            {t("family.inviteDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {members.length === 0 ? (
             <Alert>
               <AlertDescription>
-                No family members found. Invite someone to get started!
+                {t("family.noMembers")}
               </AlertDescription>
             </Alert>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead>{t("common.name")}</TableHead>
+                  <TableHead>{t("common.email")}</TableHead>
+                  <TableHead>{t("common.role")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead className="w-[100px]">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -139,12 +141,12 @@ export default function FamilyMembersPage() {
                         {member.role === "ADMIN" ? (
                           <>
                             <ShieldAlert className="mr-2 h-4 w-4 text-primary" />
-                            <span>Administrator</span>
+                            <span>{t("family.adminRole")}</span>
                           </>
                         ) : (
                           <>
                             <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span>Member</span>
+                            <span>{t("family.memberRole")}</span>
                           </>
                         )}
                       </div>
@@ -157,7 +159,7 @@ export default function FamilyMembersPage() {
                             : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                         }`}
                       >
-                        {member.status === "ACTIVE" ? "Active" : "Pending"}
+                        {member.status === "ACTIVE" ? t("common.active") : t("common.pending")}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -171,17 +173,17 @@ export default function FamilyMembersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setEditingMember({ ...member, role: mapRole(member.role) })}>
                             <Edit className="mr-2 h-4 w-4" />
-                            <span>Edit</span>
+                            <span>{t("common.edit")}</span>
                           </DropdownMenuItem>
                           {member.status === "PENDING" && (
                             <DropdownMenuItem onClick={() => handleResendInvite(member.id)}>
                               <Mail className="mr-2 h-4 w-4" />
-                              <span>Resend Invite</span>
+                              <span>{t("family.resendInvite")}</span>
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => setDeletingMember(member)}>
                             <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Remove</span>
+                            <span>{t("common.delete")}</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

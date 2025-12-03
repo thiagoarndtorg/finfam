@@ -18,6 +18,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useFamily } from "@/contexts/family-context";
 import { useFamilyCategories } from "@/hooks/use-api";
+import { useI18n } from "@/contexts/i18n-context";
 import toast from "react-hot-toast";
 
 interface EditTransactionModalProps {
@@ -35,6 +36,7 @@ export function EditTransactionModal({
 }: EditTransactionModalProps) {
   const { familyId, categories: contextCategories } = useFamily();
   const { data: apiCategories, execute: fetchCategories } = useFamilyCategories();
+  const { t } = useI18n();
 
   // Mock categories for now (fallback until API wiring/loading is added)
   const mockCategories = [
@@ -86,10 +88,10 @@ export function EditTransactionModal({
       // Wait for parent to complete API call before showing success
       await onSave(updatedTransaction);
       
-      toast.success("Transação atualizada com sucesso!");
+      toast.success(t("toasts.success.transactionUpdated"));
     } catch (error) {
       console.error("Failed to update transaction:", error);
-      toast.error("Erro ao atualizar transação");
+      toast.error(t("toasts.error.transactionUpdate"));
     }
   };
 

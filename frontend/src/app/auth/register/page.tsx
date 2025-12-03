@@ -30,31 +30,37 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { Eye, EyeOff, Loader2, Camera, Upload, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 import { cn } from "@/lib/utils";
-import logo from "../../../../public/logo.png";
+import logoDark from "../../../../public/logo_finfam_dark.png";
+import logoWhite from "../../../../public/logo_finfam_white.png";
 import { SettingsProvider, useSettings } from "@/contexts/settings-context";
 import { useRegister } from "@/hooks/use-api";
-
-const registerSchema = z
-  .object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    email: z.string().email({ message: "Please enter a valid email address" }),
-    password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-    confirmPassword: z.string(),
-    // We'll handle avatar validation separately since it's a file
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
+import { useI18n } from "@/contexts/i18n-context";
+import { useTheme } from "next-themes";
 
 export default function RegisterPage() {
+  const { theme, setTheme } = useTheme()
+
   const router = useRouter();
+  const { t } = useI18n();
   const { register } = useAuth();
   const { updateSettings } = useSettings();
   const { execute } = useRegister();
+
+  const registerSchema = z
+    .object({
+      name: z.string().min(2, { message: t("auth.nameMinLength") }),
+      email: z.string().email({ message: t("auth.invalidEmail") }),
+      password: z.string().min(8, { message: t("auth.passwordMinLength") }),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t("auth.passwordsDoNotMatch"),
+      path: ["confirmPassword"],
+    });
+
+  type RegisterFormValues = z.infer<typeof registerSchema>;
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -82,15 +88,13 @@ export default function RegisterPage() {
     setAvatarError(null);
 
     if (file) {
-      // Validate file type
       if (!file.type.startsWith("image/")) {
-        setAvatarError("Please select a valid image file");
+        setAvatarError(t("auth.selectValidImage"));
         return;
       }
 
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setAvatarError("Image must be less than 5MB");
+        setAvatarError(t("auth.imageSizeLimit"));
         return;
       }
 
@@ -145,22 +149,23 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <LanguageToggle />
         <ThemeToggle />
       </div>
 
       <Card className="w-full">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
+            <div className="h-12 w-12 rounded-full bg-transparent flex items-center justify-center">
               <div className="mt-[2px]">
-                <Image src={logo} alt=""></Image>
+                <Image src={theme === "dark" ? logoWhite : logoDark} alt=""></Image>
               </div>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{t("auth.createAccountTitle")}</CardTitle>
           <CardDescription className="text-center">
-            Enter your information to get started
+            {t("auth.enterInformation")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -173,7 +178,7 @@ export default function RegisterPage() {
           {/* Avatar upload section */}
           <div className="flex flex-col items-center mb-6">
             <div className="relative">
-              <div
+              {/* <div
                 className={cn(
                   "w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden cursor-pointer",
                   avatarPreview
@@ -193,9 +198,9 @@ export default function RegisterPage() {
                 ) : (
                   <Camera className="h-8 w-8 text-muted-foreground/50" />
                 )}
-              </div>
+              </div> */}
 
-              {avatarPreview && (
+              {/* {avatarPreview && (
                 <button
                   type="button"
                   className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1"
@@ -203,10 +208,10 @@ export default function RegisterPage() {
                 >
                   <X className="h-4 w-4" />
                 </button>
-              )}
+              )} */}
             </div>
 
-            <input
+            {/* <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
@@ -222,8 +227,8 @@ export default function RegisterPage() {
               onClick={handleSelectAvatar}
             >
               <Upload className="h-3 w-3" />
-              {avatarPreview ? "Change photo" : "Add profile photo"}
-            </Button>
+              {avatarPreview ? t("auth.changePhoto") : t("auth.addProfilePhoto")}
+            </Button> */}
 
             {avatarError && <p className="text-xs text-destructive mt-1">{avatarError}</p>}
           </div>
@@ -235,9 +240,9 @@ export default function RegisterPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t("auth.fullName")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input placeholder={t("auth.namePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -248,9 +253,9 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("common.email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="your.email@example.com" type="email" {...field} />
+                      <Input placeholder={t("auth.emailPlaceholder")} type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -261,11 +266,11 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t("common.password")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
-                          placeholder="••••••••"
+                          placeholder={t("auth.passwordPlaceholder")}
                           type={showPassword ? "text" : "password"}
                           {...field}
                         />
@@ -282,7 +287,7 @@ export default function RegisterPage() {
                             <Eye className="h-4 w-4" />
                           )}
                           <span className="sr-only">
-                            {showPassword ? "Hide password" : "Show password"}
+                            {showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                           </span>
                         </Button>
                       </div>
@@ -296,11 +301,11 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
-                          placeholder="••••••••"
+                          placeholder={t("auth.passwordPlaceholder")}
                           type={showConfirmPassword ? "text" : "password"}
                           {...field}
                         />
@@ -317,7 +322,7 @@ export default function RegisterPage() {
                             <Eye className="h-4 w-4" />
                           )}
                           <span className="sr-only">
-                            {showConfirmPassword ? "Hide password" : "Show password"}
+                            {showConfirmPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                           </span>
                         </Button>
                       </div>
@@ -330,10 +335,10 @@ export default function RegisterPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
+                    {t("auth.creatingAccount")}
                   </>
                 ) : (
-                  "Create account"
+                  t("auth.createAccount")
                 )}
               </Button>
             </form>
@@ -341,9 +346,9 @@ export default function RegisterPage() {
         </CardContent>
         <CardFooter className="flex justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <Link href="/auth/login" className="text-primary font-medium hover:underline">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
         </CardFooter>

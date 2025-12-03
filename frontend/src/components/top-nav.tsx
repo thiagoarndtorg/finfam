@@ -1,5 +1,6 @@
 "use client";
 import { ThemeToggle } from "./theme-toggle";
+import { LanguageToggle } from "./language-toggle";
 import { Notifications } from "./notifications";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,18 +29,18 @@ export function TopNav() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter(Boolean);
   const { settings } = useSettings();
-  
+
   // Get current user ID from JWT token
   const currentUserId = getUserIdFromToken() || 0;
 
   const currentFamily = userFamilies.find(f => f.id === familyId);
-  const currentFamilyName = currentFamily 
+  const currentFamilyName = currentFamily
     ? (currentFamily.createdBy === currentUserId ? "My Family" : currentFamily.name)
     : "Select Family";
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+      <div className="container flex h-16 items-center justify-between px-20 md:px-6">
         <div className="flex items-center gap-4">
           <div className="hidden md:block">
             <nav className="flex items-center space-x-2">
@@ -80,6 +81,7 @@ export function TopNav() {
         </div>
         <div className="flex items-center gap-4">
           <Notifications />
+          <LanguageToggle />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -7,8 +7,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Loader2 } from "lucide-react"
+import { useI18n } from "@/contexts/i18n-context"
 
-export function InviteMemberModal({ isOpen, onClose, onInvite }) {
+interface InviteMemberModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onInvite: (data: { email: string; role: string }) => Promise<void> | void;
+}
+
+export function InviteMemberModal({ isOpen, onClose, onInvite }: InviteMemberModalProps) {
+  const { t } = useI18n();
   const [email, setEmail] = useState("")
   const [role, setRole] = useState("member")
   const [isLoading, setIsLoading] = useState(false)
@@ -45,36 +53,36 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Invite Family Member</DialogTitle>
-          <DialogDescription>Send an invitation to a family member to join your financial dashboard.</DialogDescription>
+          <DialogTitle>{t("family.inviteFamilyMember")}</DialogTitle>
+          <DialogDescription>{t("family.inviteDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("common.email")}</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter email address"
+              placeholder={t("family.enterEmailAddress")}
               required
               disabled={isLoading}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Role</Label>
+            <Label>{t("common.role")}</Label>
             <RadioGroup value={role} onValueChange={setRole} disabled={isLoading}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="member" id="member" />
                 <Label htmlFor="member" className="cursor-pointer">
-                  Member (can view data but cannot manage budgets)
+                  {t("family.memberRole")}
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="admin" id="admin" />
                 <Label htmlFor="admin" className="cursor-pointer">
-                  Administrator (can manage accounts and invite others)
+                  {t("family.adminRole")}
                 </Label>
               </div>
             </RadioGroup>
@@ -82,16 +90,16 @@ export function InviteMemberModal({ isOpen, onClose, onInvite }) {
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handleClose} disabled={isLoading}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
+                  {t("family.sending")}
                 </>
               ) : (
-                "Send Invitation"
+                t("family.sendInvitation")
               )}
             </Button>
           </div>

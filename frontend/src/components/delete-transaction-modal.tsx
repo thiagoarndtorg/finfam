@@ -5,11 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { useFamily } from "@/contexts/family-context"
 import { useDeleteTransaction } from "@/hooks/use-api"
+import { useI18n } from "@/contexts/i18n-context"
 import toast from "react-hot-toast"
 
 export function DeleteTransactionModal({ isOpen, onClose, transaction, onDelete }) {
   const { familyId } = useFamily()
   const { execute: deleteTransactionAPI } = useDeleteTransaction()
+  const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleDelete = async () => {
@@ -18,10 +20,10 @@ export function DeleteTransactionModal({ isOpen, onClose, transaction, onDelete 
     try {
       await deleteTransactionAPI({ id: Number(transaction.id), familyId })
       await onDelete(transaction.id)
-      toast.success("Transação deletada com sucesso!")
+      toast.success(t("toasts.success.transactionDeleted"))
     } catch (error) {
       console.error("Error deleting transaction:", error)
-      toast.error("Erro ao deletar transação")
+      toast.error(t("toasts.error.transactionDelete"))
     } finally {
       setIsLoading(false)
     }
@@ -31,9 +33,9 @@ export function DeleteTransactionModal({ isOpen, onClose, transaction, onDelete 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Delete Transaction</DialogTitle>
+          <DialogTitle>{t("transactions.delete")}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this transaction? This action cannot be undone.
+            {t("transactions.deleteConfirm")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -49,10 +51,10 @@ export function DeleteTransactionModal({ isOpen, onClose, transaction, onDelete 
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>
-              {isLoading ? "Deletando..." : "Delete"}
+              {isLoading ? t("common.loading") : t("common.delete")}
             </Button>
           </div>
         </div>

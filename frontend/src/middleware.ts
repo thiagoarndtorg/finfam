@@ -22,6 +22,7 @@ const validPaths = [
   "/settings",
   "/budget-management",
   "/family-members",
+
 ]; // Add your valid routes here
 
 export async function middleware(request: NextRequest) {
@@ -87,6 +88,7 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!_next/static|_next/image).*)",
+    "/((?!_next/static|_next/image|finfam.ico|logo_finfam_white.png|logo_finfam_white.ico|logo_finfam_dark.png).*)",
+
   ],
 };

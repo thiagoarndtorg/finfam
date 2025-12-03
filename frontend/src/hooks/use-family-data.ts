@@ -53,7 +53,7 @@ export function useFamilyData(initialFamilyId = 1) {
           // Only show error for non-403 errors
           if (!is403Error) {
             setError(error instanceof Error ? error : new Error("Unknown error"));
-            toast.error("Erro ao retornar informações da conta.");
+            toastI18n.error("toasts.error.accountInfo");
             console.error("Retrieved account data error:", error);
           } else {
             // For 403, just set empty state - might be expected when no accounts exist

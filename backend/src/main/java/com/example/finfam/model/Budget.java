@@ -44,7 +44,7 @@ public class Budget {
     @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column
+    @Column(name = "month")
     private Integer month;
 
     @Column

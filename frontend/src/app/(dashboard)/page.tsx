@@ -12,52 +12,22 @@ import {
   useBankStatement,
   useFamilyFinancials,
   useFamilyCategories,
-  useAutoSyncAccounts,
 } from "@/hooks/use-api";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { useFamily } from "@/contexts/family-context";
 import { apiClient } from "@/middleware/api-client";
+import { useI18n } from "@/contexts/i18n-context";
 
 export default function Dashboard() {
+  const { t } = useI18n();
   const { familyId, familyData, isLoading, error, transactions, setTransactions, setCategories, refreshFamilyData } = useFamily();
   const bankStatement = useBankStatement();
   const { data: categoriesData, execute: fetchCategories } = useFamilyCategories();
-  const { execute: autoSyncAccounts } = useAutoSyncAccounts();
-  
-  // Track if auto-sync has been attempted to avoid running multiple times
-  const hasAutoSynced = useRef(false);
 
   // Debug logging
   console.log("Dashboard render - familyId:", familyId, "familyData:", familyData, "isLoading:", isLoading, "error:", error);
   console.log("User authenticated:", apiClient.isAuthenticated());
-
-  // Auto-sync accounts when dashboard loads
-  useEffect(() => {
-    const performAutoSync = async () => {
-      if (familyId) {
-        try {
-          const syncResults = await autoSyncAccounts({ familyId });
-          if (syncResults && syncResults.length > 0) {
-            toast.success(`${syncResults.length} conta(s) sincronizada(s) com sucesso!`);
-            // Refresh family data to show updated balances and transactions
-            if (refreshFamilyData) {
-              refreshFamilyData();
-            }
-          }
-        } catch (error) {
-          console.error("Auto-sync failed:", error);
-          // Don't show error toast for auto-sync failures as they might be silent
-        }
-      }
-    };
-
-    // Only auto-sync if we have family data and accounts exist
-    if (familyData && familyData.accounts && familyData.accounts.length > 0) {
-      console.log("JINGOLASSSS");
-      performAutoSync();
-    }
-  }, []);
 
   // Push flattened transactions into context whenever familyData changes
   useEffect(() => {
@@ -90,7 +60,7 @@ export default function Dashboard() {
   if (!apiClient.isAuthenticated()) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-500">Please log in to access the dashboard</div>
+        <div className="text-lg text-red-500">{t("auth.login")}</div>
       </div>
     );
   }
@@ -99,7 +69,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading family data...</div>
+        <div className="text-lg">{t("common.loading")}</div>
       </div>
     );
   }
@@ -108,7 +78,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-red-500">Error loading data: {error.message}</div>
+        <div className="text-lg text-red-500">{t("common.error")}: {error.message}</div>
       </div>
     );
   }
@@ -116,7 +86,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
         <div className="flex flex-wrap gap-2">
           <ConnectBankButton />
           <UserFilter />

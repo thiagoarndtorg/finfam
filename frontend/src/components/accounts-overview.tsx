@@ -9,12 +9,14 @@ import { TransferModal } from "./transfer-modal";
 import { AddExpenseModal } from "./add-expense-modal";
 import { useFamilyAccountsTemp, useSyncAccount } from "@/hooks/use-api";
 import { useFamily } from "@/contexts/family-context";
+import { useI18n } from "@/contexts/i18n-context";
 import { Account } from "@/types/account-type";
 import { getBankColor, formatBrazilianCurrency } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 export function AccountsOverview() {
   const { familyId, refreshFamilyData } = useFamily();
+  const { t } = useI18n();
   const { data: accountsData, isLoading, error, execute: fetchAccounts } = useFamilyAccountsTemp();
   const { execute: syncAccount } = useSyncAccount();
   const { data: banksData }: any = [];
@@ -97,10 +99,10 @@ export function AccountsOverview() {
       await syncAccount(accountId, familyId);
       // Refresh accounts list to show updated balance
       await fetchAccounts(familyId);
-      toast.success("Account refreshed successfully");
+      toast.success(t("toasts.success.accountRefreshed"));
     } catch (error: any) {
       console.error("Failed to refresh account:", error);
-      toast.error(error?.message || "Failed to refresh account. You may need to reconnect your bank account.");
+      toast.error(error?.message || t("toasts.error.accountRefresh"));
     } finally {
       setRefreshingAccountId(null);
     }
@@ -116,12 +118,12 @@ export function AccountsOverview() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-medium">Accounts Overview</CardTitle>
+        <CardTitle className="text-xl font-medium">{t("dashboard.accountsOverview")}</CardTitle>
         <Button
           variant="ghost"
           size="icon"
           onClick={handleRefreshAccounts}
-          title="Refresh accounts"
+          title={t("dashboard.refreshAccounts")}
         >
           <RefreshCcw className="h-4 w-4" />
         </Button>
@@ -130,25 +132,25 @@ export function AccountsOverview() {
         {isLoading ? (
           <div className="text-center py-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="text-sm text-muted-foreground mt-2">Carregando contas...</p>
+            <p className="text-sm text-muted-foreground mt-2">{t("dashboard.loadingAccounts")}</p>
           </div>
         ) : error ? (
           <div className="text-center py-4">
-            <p className="text-sm text-red-600">Erro ao carregar contas</p>
+            <p className="text-sm text-red-600">{t("dashboard.errorLoadingAccounts")}</p>
             <Button size="sm" onClick={handleRefreshAccounts} className="mt-2">
-              Tentar novamente
+              {t("dashboard.tryAgain")}
             </Button>
           </div>
         ) : (
           <>
             <div className="text-2xl font-bold mb-4">{formatBrazilianCurrency(totalBalance)}</div>
-            <p className="text-xs text-muted-foreground mb-6">Total balance across all accounts</p>
+            <p className="text-xs text-muted-foreground mb-6">{t("dashboard.totalBalanceDescription")}</p>
             <div className="space-y-4 mb-6">
               {accounts.length === 0 ? (
                 <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">Nenhuma conta conectada</p>
+                  <p className="text-sm text-muted-foreground">{t("dashboard.noAccounts")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Use o botão "Add Account" para conectar uma conta bancária
+                    {t("dashboard.addAccountButton")}
                   </p>
                 </div>
               ) : (
@@ -181,7 +183,7 @@ export function AccountsOverview() {
                         onClick={() => handleRefreshSingleAccount(account.id)}
                         disabled={refreshingAccountId === account.id}
                         className={refreshingAccountId === account.id ? "animate-spin" : ""}
-                        title="Refresh this account"
+                        title={t("dashboard.refreshThisAccount")}
                       >
                         <RefreshCcw className="h-4 w-4" />
                       </Button>

@@ -26,8 +26,11 @@ import { toast } from "sonner";
 import { useFamily } from "@/contexts/family-context";
 import { useDisconnectAccount, useDisconnectAllAccounts } from "@/hooks/use-api";
 import { Account } from "@/types/account-type";
+import { useI18n } from "@/contexts/i18n-context";
+import { LanguageSelector } from "@/components/language-selector";
 
 export default function SettingsPage() {
+  const { t } = useI18n();
   const { familyId, familyData, refreshFamilyData } = useFamily();
   const { execute: disconnectAccount, isLoading: isDisconnecting } = useDisconnectAccount();
   const { execute: disconnectAllAccounts, isLoading: isDisconnectingAll } = useDisconnectAllAccounts();
@@ -39,7 +42,7 @@ export default function SettingsPage() {
   const activeAccounts = familyData?.accounts?.filter(account => account.isActive === true) || [];
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "Unknown date";
+    if (!dateString) return t("settings.unknownDate");
     try {
       const date = new Date(dateString);
       return new Intl.DateTimeFormat("en-US", {
@@ -62,7 +65,7 @@ export default function SettingsPage() {
 
     const result = await disconnectAccount({ accountId: selectedAccount.id, familyId });
     if (result !== null) {
-      toast.success("Bank disconnected successfully");
+      toast.success(t("settings.accountDisconnected"));
       await refreshFamilyData();
       setDisconnectDialogOpen(false);
       setSelectedAccount(null);
@@ -78,7 +81,7 @@ export default function SettingsPage() {
 
     const result = await disconnectAllAccounts({ familyId });
     if (result !== null) {
-      toast.success(`Successfully disconnected ${result.count} bank(s)`);
+      toast.success(t("settings.allAccountsDisconnected"));
       await refreshFamilyData();
       setDisconnectAllDialogOpen(false);
     }
@@ -91,28 +94,28 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t("settings.title")}</h1>
 
       <Tabs defaultValue="data" className="space-y-4">
         <TabsList>
-          {/* <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="open-finance">Open Finance</TabsTrigger> */}
-          <TabsTrigger value="data">Data Management</TabsTrigger>
+          <TabsTrigger value="data">{t("settings.connectedAccounts")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="data">
           <Card>
             <CardHeader>
-              <CardTitle>Data Management</CardTitle>
-              <CardDescription>Manage your financial data and connected accounts.</CardDescription>
+              <CardTitle>{t("settings.connectedAccounts")}</CardTitle>
+              <CardDescription>{t("settings.connectedAccounts")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Connected Banks</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">{t("settings.connectedAccounts")}</h3>
+                  <LanguageSelector />
+                </div>
                 {activeAccounts.length === 0 ? (
                   <div className="border rounded-md p-8 text-center">
-                    <p className="text-muted-foreground">No banks connected yet</p>
+                    <p className="text-muted-foreground">{t("settings.noAccountsConnected")}</p>
                   </div>
                 ) : (
                   <>
@@ -146,7 +149,7 @@ export default function SettingsPage() {
                               onClick={() => handleDisconnect(account)}
                               disabled={isDisconnecting}
                             >
-                              Disconnect
+                              {t("settings.disconnectAccount")}
                             </Button>
                           </div>
                         </div>
@@ -157,7 +160,7 @@ export default function SettingsPage() {
                       onClick={handleDisconnectAll}
                       disabled={isDisconnectingAll}
                     >
-                      Disconnect All Banks
+                      {t("settings.disconnectAllAccounts")}
                     </Button>
                   </>
                 )}
@@ -166,10 +169,9 @@ export default function SettingsPage() {
               <Dialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Disconnect Bank</DialogTitle>
+                    <DialogTitle>{t("settings.disconnectAccount")}</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to disconnect {selectedAccount?.bank?.name || "this bank"}? 
-                      This will stop syncing data from this bank account.
+                      {t("settings.disconnectConfirm")}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -180,10 +182,10 @@ export default function SettingsPage() {
                         setSelectedAccount(null);
                       }}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                     <Button variant="destructive" onClick={confirmDisconnect} disabled={isDisconnecting}>
-                      {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+                      {isDisconnecting ? t("common.loading") : t("settings.disconnectAccount")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -192,10 +194,9 @@ export default function SettingsPage() {
               <Dialog open={disconnectAllDialogOpen} onOpenChange={setDisconnectAllDialogOpen}>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Disconnect All Banks</DialogTitle>
+                    <DialogTitle>{t("settings.disconnectAllAccounts")}</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to disconnect all {activeAccounts.length} connected bank(s)? 
-                      This will stop syncing data from all bank accounts.
+                      {t("settings.disconnectAllConfirm")}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -203,10 +204,10 @@ export default function SettingsPage() {
                       variant="outline"
                       onClick={() => setDisconnectAllDialogOpen(false)}
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                     <Button variant="destructive" onClick={confirmDisconnectAll} disabled={isDisconnectingAll}>
-                      {isDisconnectingAll ? "Disconnecting..." : "Disconnect All"}
+                      {isDisconnectingAll ? t("common.loading") : t("settings.disconnectAllAccounts")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

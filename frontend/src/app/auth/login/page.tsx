@@ -28,23 +28,30 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/auth-context";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 import { useLogin } from "@/hooks/use-api";
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  rememberMe: z.boolean().default(false),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { useI18n } from "@/contexts/i18n-context";
+import logoDark from "../../../../public/logo_finfam_dark.png";
+import logoWhite from "../../../../public/logo_finfam_white.png";
+import Image from "next/image";
+import { useTheme } from "next-themes";
 
 export default function LoginPage() {
   const router = useRouter();
-
+  const { t } = useI18n();
+  const { theme, setTheme } = useTheme()
   const { execute } = useLogin();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+
+  const loginSchema = z.object({
+    email: z.string().email({ message: t("auth.invalidEmail") }),
+    password: z.string().min(8, { message: t("auth.passwordMinLength") }),
+    rememberMe: z.boolean().default(false),
+  });
+
+  type LoginFormValues = z.infer<typeof loginSchema>;
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -75,20 +82,23 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <LanguageToggle />
         <ThemeToggle />
       </div>
 
       <Card className="w-full">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-xl font-bold text-primary-foreground">F&S</span>
+            <div className="h-12 w-12 rounded-full bg-transparent flex items-center justify-center">
+              <div className="mt-[2px]">
+                <Image src={theme === "dark" ? logoWhite : logoDark} alt=""></Image>
+              </div>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{t("auth.welcomeBack")}</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your account
+            {t("auth.enterCredentials")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,9 +114,9 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("common.email")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="your.email@example.com" type="email" {...field} />
+                      <Input placeholder={t("auth.emailPlaceholder")} type="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -117,7 +127,7 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t("common.password")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -138,7 +148,7 @@ export default function LoginPage() {
                             <Eye className="h-4 w-4" />
                           )}
                           <span className="sr-only">
-                            {showPassword ? "Hide password" : "Show password"}
+                            {showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                           </span>
                         </Button>
                       </div>
@@ -152,20 +162,20 @@ export default function LoginPage() {
                 name="rememberMe"
                 render={({ field }) => (
                   <FormItem className="flex flex-row justify-between items-center space-x-2 space-y-0">
-                    <div className="flex gap-2 items-center">
+                    {/* <div className="flex gap-2 items-center">
                       <FormControl>
                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
-                      <FormLabel className="text-sm font-normal">Remember me</FormLabel>
-                    </div>
-                    <div className="ml-auto">
+                      <FormLabel className="text-sm font-normal">{t("auth.rememberMe")}</FormLabel>
+                    </div> */}
+                    {/* <div className="ml-auto">
                       <Link
                         href="/auth/forgot-password"
                         className="text-sm text-primary hover:underline"
                       >
-                        Forgot password?
+                        {t("auth.forgotPassword")}
                       </Link>
-                    </div>
+                    </div> */}
                   </FormItem>
                 )}
               />
@@ -173,10 +183,10 @@ export default function LoginPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Logging in...
+                    {t("common.loading")}
                   </>
                 ) : (
-                  "Sign in"
+                  t("auth.login")
                 )}
               </Button>
             </form>
@@ -184,9 +194,9 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex justify-center border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            {t("auth.dontHaveAccount")}{" "}
             <Link href="/auth/register" className="text-primary font-medium hover:underline">
-              Create account
+              {t("auth.createAccount")}
             </Link>
           </p>
         </CardFooter>

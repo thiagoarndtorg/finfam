@@ -26,9 +26,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     @Query("SELECT t FROM Transaction t WHERE t.familyId = :familyId")
     List<Transaction> findByFamilyId(@Param("familyId") Integer familyId);
 
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.familyId = :familyId AND t.category.id = :categoryId AND YEAR(t.transactionDate) = :year AND MONTH(t.transactionDate) = :month AND t.transactionType = 'EXPENSE'")
+    @Query("SELECT COALESCE(SUM(ABS(t.amount)), 0) FROM Transaction t WHERE t.familyId = :familyId AND t.category.id = :categoryId AND YEAR(t.transactionDate) = :year AND MONTH(t.transactionDate) = :month AND t.transactionType = 'EXPENSE'")
     BigDecimal sumExpensesByCategoryAndMonth(@Param("familyId") Integer familyId, @Param("categoryId") Integer categoryId, @Param("year") Integer year, @Param("month") Integer month);
 
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.familyId = :familyId AND t.userId = :userId AND YEAR(t.transactionDate) = :year AND MONTH(t.transactionDate) = :month AND t.transactionType = 'EXPENSE'")
+    @Query("SELECT COALESCE(SUM(ABS(t.amount)), 0) FROM Transaction t WHERE t.familyId = :familyId AND t.userId = :userId AND YEAR(t.transactionDate) = :year AND MONTH(t.transactionDate) = :month AND t.transactionType = 'EXPENSE'")
     BigDecimal sumExpensesByUserAndMonth(@Param("familyId") Integer familyId, @Param("userId") Integer userId, @Param("year") Integer year, @Param("month") Integer month);
 }

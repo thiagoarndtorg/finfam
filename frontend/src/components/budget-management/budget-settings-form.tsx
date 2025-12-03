@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Save, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { useFamily } from "@/contexts/family-context"
+import { useI18n } from "@/contexts/i18n-context"
 import { useFamilyBudgets, useSaveBudgets, useFamilyMembers } from "@/hooks/use-api"
 import { useEffect } from "react"
 
@@ -17,7 +18,8 @@ import { useEffect } from "react"
 export function BudgetSettingsForm() {
   // Contexto e hooks
   const { familyId, categories } = useFamily()
-  const [familyMembers, setFamilyMembers] = useState<Array<{id: number; userId: number; username: string}>>([])
+  const { t } = useI18n()
+  const [familyMembers, setFamilyMembers] = useState<Array<{ id: number; userId: number; username: string }>>([])
   const { data: budgetsData, execute: fetchBudgets } = useFamilyBudgets()
   const { execute: saveBudgets, isLoading: isSaving } = useSaveBudgets()
   const { data: membersData, execute: fetchMembers } = useFamilyMembers()
@@ -37,7 +39,7 @@ export function BudgetSettingsForm() {
       fetchBudgets(familyId, year, month)
       fetchMembers(familyId)
     }
-  }, [familyId, year, month])
+  }, [familyId, year, month, fetchBudgets, fetchMembers])
 
   // Atualizar membros quando dados chegarem
   useEffect(() => {
@@ -102,18 +104,18 @@ export function BudgetSettingsForm() {
 
     try {
       await saveBudgets({ familyId, year, month, budgets })
-      toast.success("Budget settings saved successfully")
+      toast.success(t("toasts.success.budgetSettingsSaved"))
       // Recarregar dados atualizados
       fetchBudgets(familyId, year, month)
     } catch (error) {
-      toast.error("Failed to save budget settings")
+      toast.error(t("toasts.error.budgetSettings"))
     }
   }
 
   const handleResetBudgets = () => {
     if (familyId) {
       fetchBudgets(familyId, year, month)
-      toast.info("Budget settings reset to saved values")
+      toast.info(t("toasts.info.budgetReset"))
     }
   }
 
@@ -121,8 +123,8 @@ export function BudgetSettingsForm() {
     <div className="space-y-6">
       <Tabs defaultValue="by-category">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="by-category">By Category</TabsTrigger>
-          <TabsTrigger value="by-member">By Family Member</TabsTrigger>
+          <TabsTrigger value="by-category">{t("budget.byCategory")}</TabsTrigger>
+          <TabsTrigger value="by-member">{t("budget.byFamilyMember")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="by-category" className="space-y-4">
@@ -152,46 +154,52 @@ export function BudgetSettingsForm() {
         </TabsContent>
 
         <TabsContent value="by-member" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {familyMembers.map((member) => (
-              <Card key={member.id}>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <Label htmlFor={`member-${member.id}`}>{member.username}</Label>
-                    <div className="flex items-center">
-                      <span className="mr-2">R$</span>
-                      <Input
-                        id={`member-${member.id}`}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={memberBudgets[String(member.userId)] ?? ""}
-                        onChange={(e) => handleMemberBudgetChange(member.userId, e.target.value)}
-                      />
+          {familyMembers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>{t("family.noMembers")}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {familyMembers.map((member) => (
+                <Card key={member.id}>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`member-${member.id}`}>{member.username}</Label>
+                      <div className="flex items-center">
+                        <span className="mr-2">R$</span>
+                        <Input
+                          id={`member-${member.id}`}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={memberBudgets[String(member.userId)] ?? ""}
+                          onChange={(e) => handleMemberBudgetChange(member.userId, e.target.value)}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={handleResetBudgets}>
           <RefreshCw className="mr-2 h-4 w-4" />
-          Reset
+          {"Reset"}
         </Button>
         <Button onClick={handleSaveBudgets} disabled={isSaving}>
           {isSaving ? (
             <>
               <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {t("common.saving")}
             </>
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Budgets
+              {t("budget.saveBudgets")}
             </>
           )}
         </Button>

@@ -1,12 +1,17 @@
 name: Deploy to EC2 (Self-hosted)
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches: [ "master" ]
 
 jobs:
   deploy:
     runs-on: self-hosted
+    # Only deploy if CI workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code
@@ -49,9 +54,11 @@ jobs:
         run: |
           docker compose down || true
 
-      - name: Build and start containers
+      - name: Build and start containers with cache
         run: |
-          docker compose up -d --build
+          # Build with parallel builds and cache for faster builds
+          docker compose build --parallel
+          docker compose up -d
 
       - name: Cleanup unused images
         run: |

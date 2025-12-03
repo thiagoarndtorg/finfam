@@ -6,16 +6,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BudgetSettingsForm } from "@/components/budget-management/budget-settings-form"
 import { CategoryManagement } from "@/components/budget-management/category-management"
 import { useFamily } from "@/contexts/family-context"
+import { useI18n } from "@/contexts/i18n-context"
 import { Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 
 export default function BudgetManagementPage() {
   const { isCurrentUserAdmin, currentUserRole } = useFamily();
+  const { t } = useI18n();
   const router = useRouter();
 
   useEffect(() => {
     if (currentUserRole === 'MEMBER') {
-      toast.error('Acesso negado. Apenas administradores podem gerenciar orçamentos.');
+      toast.error(t("toasts.error.accessDenied"));
       router.push('/');
     }
   }, [currentUserRole, router]);
@@ -35,20 +37,20 @@ export default function BudgetManagementPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Budget & Category Management</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("budget.budgetManagement")}</h1>
       </div>
 
       <Tabs defaultValue="categories" className="space-y-4">
         <TabsList>
-        <TabsTrigger value="categories">Category Management</TabsTrigger>
-          <TabsTrigger value="budget">Budget Settings</TabsTrigger>
+        <TabsTrigger value="categories">{t("budget.categoryManagement")}</TabsTrigger>
+          <TabsTrigger value="budget">{t("budget.budgetSettings")}</TabsTrigger>
         
         </TabsList>
         <TabsContent value="categories" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Category Management</CardTitle>
-              <CardDescription>Create, edit, and delete expense categories to organize your spending</CardDescription>
+              <CardTitle>{t("budget.categoryManagement")}</CardTitle>
+              <CardDescription>{t("budget.categoryManagementDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <CategoryManagement />
@@ -58,8 +60,8 @@ export default function BudgetManagementPage() {
         <TabsContent value="budget" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Budget Allocation</CardTitle>
-              <CardDescription>Set monthly budget limits for each spending category and family member</CardDescription>
+              <CardTitle>{t("budget.budgetAllocation")}</CardTitle>
+              <CardDescription>{t("budget.budgetAllocationDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <BudgetSettingsForm />

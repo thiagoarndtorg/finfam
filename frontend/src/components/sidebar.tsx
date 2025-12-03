@@ -22,24 +22,31 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useFamily } from "@/contexts/family-context";
-
-const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Analytics", href: "/analytics", icon: BarChart2 },
-  { name: "Budget Management", href: "/budget-management", icon: Target },
-  { name: "Family Members", href: "/family-members", icon: Users },
-];
-
-const bottomNavigation = [{ name: "Settings", href: "/settings", icon: Settings }];
+import { useI18n } from "@/contexts/i18n-context";
+import logoDark from "../../public/logo_finfam_dark.png";
+import logoWhite from "../../public/logo_finfam_white.png";
+import { useTheme } from "next-themes";
+import Image from "next/image";
 
 export function Sidebar() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { isCurrentUserAdmin } = useFamily();
-  
-  const filteredNavigation = navigation.filter(item => 
-    item.name !== 'Budget Management' || isCurrentUserAdmin()
+  const { theme, setTheme } = useTheme()
+
+  const navigation = [
+    { name: t("sidebar.dashboard"), href: "/", icon: Home },
+    { name: t("sidebar.analytics"), href: "/analytics", icon: BarChart2 },
+    { name: t("sidebar.budgetManagement"), href: "/budget-management", icon: Target },
+    { name: t("sidebar.familyMembers"), href: "/family-members", icon: Users },
+  ];
+
+  const bottomNavigation = [{ name: t("sidebar.settings"), href: "/settings", icon: Settings }];
+
+  const filteredNavigation = navigation.filter(item =>
+    item.name !== t("sidebar.budgetManagement") || isCurrentUserAdmin()
   );
 
   const NavItem = ({ item, isBottom = false }: any) => (
@@ -92,8 +99,13 @@ export function Sidebar() {
               )}
             >
               {!isCollapsed && (
-                <Link href="/" className="flex items-center font-semibold">
-                  <span className="text-lg">OpenFinance</span>
+                <Link href="/" className="flex gap-2 justify-center items-center font-semibold">
+                  <div className="h-8 w-8 rounded-full bg-transparent flex items-center justify-center">
+                    <div className="">
+                      <Image src={theme === "dark" ? logoWhite : logoDark} alt=""></Image>
+                    </div>
+                  </div>
+                  <span className="text-lg">FinFam</span>
                 </Link>
               )}
               <Button

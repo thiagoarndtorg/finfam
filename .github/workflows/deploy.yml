@@ -1,17 +1,13 @@
 name: Deploy
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
+  push:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: self-hosted
-    # Only deploy if CI workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code

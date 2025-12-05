@@ -14,6 +14,10 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByVerificationToken(String verificationToken);
+
+    Optional<User> findByGoogleId(String googleId);
+
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.familyMemberships fm LEFT JOIN FETCH fm.family WHERE u.id = :userId")
     Optional<User> findByIdWithFamilyMemberships(@Param("userId") Integer userId);
 

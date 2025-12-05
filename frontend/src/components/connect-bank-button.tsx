@@ -13,6 +13,7 @@ import { BanknoteIcon as Bank, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic"; // Add this
 import { useConnectToken, useBankStatement } from "@/hooks/use-api";
 import { useI18n } from "@/contexts/i18n-context";
+import { useFamily } from "@/contexts/family-context";
 import { toast } from "sonner";
 
 const PluggyConnect = dynamic(
@@ -25,6 +26,7 @@ export function ConnectBankButton() {
   const [itemId, setItemId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<any>([]);
   const { t } = useI18n();
+  const { familyId } = useFamily(); // Get familyId from context
   // API hook
   const connectTokenApi = useConnectToken();
   const bankStatement = useBankStatement();
@@ -57,7 +59,11 @@ export function ConnectBankButton() {
   };
 
   const fetchTransactions = async (id: string) => {
-    const data = await bankStatement.execute(id);
+    if (!familyId) {
+      toast.error("Família não selecionada");
+      return;
+    }
+    const data = await bankStatement.execute(id, familyId);
     setTransactions(data?.transactions);
   };
 

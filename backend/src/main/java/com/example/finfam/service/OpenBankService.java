@@ -10,6 +10,7 @@ import com.example.finfam.exception.CustomException;
 import com.example.finfam.model.Account;
 import com.example.finfam.model.Bank;
 import com.example.finfam.model.FamilyMember;
+import com.example.finfam.model.User;
 import com.example.finfam.repository.BankRepository;
 import com.example.finfam.repository.FamilyMemberRepository;
 import com.example.finfam.utils.BankEnum;
@@ -42,6 +43,7 @@ public class OpenBankService {
     private final TransactionService transactionService;
 
     private final FamilyMemberRepository familyMemberRepository; // Adicione isso se ainda não tiver
+    private final UserService userService;
 
 
     @Value("${pluggy.client.id}")
@@ -221,6 +223,9 @@ public class OpenBankService {
 
         String jwtToken = token.substring(7);
         Integer userId = jwtService.extractUserId(jwtToken);
+        
+        System.out.println("DEBUG OpenBankService - Received familyId from request: " + familyId);
+        System.out.println("DEBUG OpenBankService - userId: " + userId + ", itemId: " + itemId);
 
 
         if (itemId == null || itemId.trim().isEmpty()) {
@@ -260,15 +265,23 @@ public class OpenBankService {
         BankEnum bankEnum = pluggyAccounts.get(0).getBankName();
         String bankCode = bankEnum.getBankCode();
 
+        // Debug: verificar contas existentes
+        boolean userHasBankInFamily = accountService.existsByUserIdAndFamilyIdAndBankCode(userId, familyId, bankCode);
+        boolean itemIdExistsInFamily = accountService.existsByItemIdAndFamilyId(cleanItemId, familyId);
+        
+        System.out.println("DEBUG - userId: " + userId + ", familyId: " + familyId + ", bankCode: " + bankCode);
+        System.out.println("DEBUG - userHasBankInFamily: " + userHasBankInFamily);
+        System.out.println("DEBUG - itemIdExistsInFamily: " + itemIdExistsInFamily);
+        System.out.println("DEBUG - cleanItemId: " + cleanItemId);
 
-        // Verificar se o usuário já tem uma conta deste banco
-        if (accountService.existsByUserIdAndBankCode(userId, bankCode)) {
-            throw new CustomException("Você já conectou uma conta deste banco (" + bankEnum + ")");
+        // Verificar se o usuário já tem uma conta deste banco NESTA FAMÍLIA
+        if (userHasBankInFamily) {
+            throw new CustomException("Você já conectou uma conta deste banco (" + bankEnum + ") nesta família");
         }
 
-        // Verificar se este itemId específico já está conectado por qualquer usuário
-        if (accountService.existsByItemId(cleanItemId)) {
-            throw new CustomException("Esta conta específica já está conectada ao sistema");
+        // Verificar se este itemId específico já está conectado NESTA FAMÍLIA
+        if (itemIdExistsInFamily) {
+            throw new CustomException("Esta conta específica já está conectada nesta família");
         }
 
         Bank bank = bankRepo.findByBankCode(bankCode)
@@ -280,8 +293,13 @@ public class OpenBankService {
             allTransactions.addAll(getTransactions(pluggyAccount.getId(), apiKey, bankEnum));
         }
         totalBalance = totalBalance + pluggyAccounts.get(0).getBalance();
+        
+        // Get user name
+        User user = userService.findById(userId);
+        String userName = user.getUsername() != null ? user.getUsername() : user.getEmail();
+        
         // Save the account using AccountService
-        Account account = accountService.saveAccount(userId, familyId, bank.getId(), cleanItemId, bank.getName() + " Account", totalBalance);
+        Account account = accountService.saveAccount(userId, familyId, bank.getId(), cleanItemId, bank.getName() + " Account - " + userName, totalBalance);
 
         //Save the transactions
         var transactions = TransactionDTO.convertToTransactionDTOs(allTransactions, account.getId(), account.getName(), userId, familyId);

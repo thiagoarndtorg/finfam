@@ -28,18 +28,31 @@ import { useDisconnectAccount, useDisconnectAllAccounts } from "@/hooks/use-api"
 import { Account } from "@/types/account-type";
 import { useI18n } from "@/contexts/i18n-context";
 import { LanguageSelector } from "@/components/language-selector";
+import { getUserIdFromToken } from "@/lib/auth";
 
 export default function SettingsPage() {
   const { t } = useI18n();
-  const { familyId, familyData, refreshFamilyData } = useFamily();
+  const { familyId, familyData, familyMembers, refreshFamilyData, isCurrentUserAdmin } = useFamily();
   const { execute: disconnectAccount, isLoading: isDisconnecting } = useDisconnectAccount();
   const { execute: disconnectAllAccounts, isLoading: isDisconnectingAll } = useDisconnectAllAccounts();
-  
+
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [disconnectAllDialogOpen, setDisconnectAllDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
   const activeAccounts = familyData?.accounts?.filter(account => account.isActive === true) || [];
+
+  // Get current user ID from token
+  const currentUserId = getUserIdFromToken();
+
+  // Check if user can disconnect an account (must be admin OR the account owner)
+  const canDisconnectAccount = (account: Account) => {
+    if (isCurrentUserAdmin()) return true;
+    return account.userId === currentUserId;
+  };
+
+  // Check if user can disconnect all accounts (must be admin)
+  const canDisconnectAll = isCurrentUserAdmin();
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return t("settings.unknownDate");
@@ -121,6 +134,7 @@ export default function SettingsPage() {
                   <>
                     <div className="space-y-2 border rounded-md p-4">
                       {activeAccounts.map((account, index) => (
+
                         <div key={account.id}>
                           {index > 0 && <Separator className="my-2" />}
                           <div className="flex items-center justify-between">
@@ -139,29 +153,37 @@ export default function SettingsPage() {
                               <div>
                                 <p className="font-medium">{account.bank?.name || "Unknown Bank"}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  Connected on {formatDate(account.createdAt)}
+                                  {(() => {
+                                    const accountOwner = familyMembers?.find(m => m.userId === account.userId);
+                                    const ownerName = accountOwner?.username || `User ${account.userId}`;
+                                    return t("settings.managedBy", { username: ownerName });
+                                  })()}
                                 </p>
                               </div>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDisconnect(account)}
-                              disabled={isDisconnecting}
-                            >
-                              {t("settings.disconnectAccount")}
-                            </Button>
+                            {canDisconnectAccount(account) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDisconnect(account)}
+                                disabled={isDisconnecting}
+                              >
+                                {t("settings.disconnectAccount")}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
-                    <Button
-                      variant="destructive"
-                      onClick={handleDisconnectAll}
-                      disabled={isDisconnectingAll}
-                    >
-                      {t("settings.disconnectAllAccounts")}
-                    </Button>
+                    {canDisconnectAll && (
+                      <Button
+                        variant="destructive"
+                        onClick={handleDisconnectAll}
+                        disabled={isDisconnectingAll}
+                      >
+                        {t("settings.disconnectAllAccounts")}
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

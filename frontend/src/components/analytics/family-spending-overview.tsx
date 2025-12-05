@@ -25,7 +25,7 @@ const MEMBER_COLORS = ["#0ea5e9", "#8b5cf6", "#f43f5e", "#10b981", "#f59e0b", "#
 export function FamilySpendingOverview() {
   const { theme } = useTheme()
   const [timeframe, setTimeframe] = useState("month")
-  const { transactions: contextTransactions } = useFamily()
+  const { transactions: contextTransactions, familyMembers } = useFamily()
 
   // Build transactions from context
   const transactions = useMemo(() => {
@@ -70,6 +70,17 @@ export function FamilySpendingOverview() {
     })
   }, [transactions])
 
+  // Create a map of userId -> username from familyMembers
+  const memberNameMap = useMemo(() => {
+    const map = new Map<number, string>()
+    if (familyMembers) {
+      familyMembers.forEach((member) => {
+        map.set(member.userId, member.username || `User ${member.userId}`)
+      })
+    }
+    return map
+  }, [familyMembers])
+
   // Calculate spending by user (simulating family members)
   const memberSpendingData = useMemo(() => {
     const now = new Date()
@@ -106,8 +117,10 @@ export function FamilySpendingOverview() {
       if (!userId) continue
 
       if (!userMap.has(userId)) {
+        // Get real username from familyMembers, fallback to "User {id}" if not found
+        const username = memberNameMap.get(userId) || `User ${userId}`
         userMap.set(userId, {
-          name: `User ${userId}`,
+          name: username,
           spending: 0,
           color: MEMBER_COLORS[colorIndex % MEMBER_COLORS.length]
         })
@@ -119,7 +132,7 @@ export function FamilySpendingOverview() {
     }
 
     return Array.from(userMap.values()).map(({ name, spending, color }) => ({ name, spending, color }))
-  }, [transactions, timeframe])
+  }, [transactions, timeframe, memberNameMap])
 
   const totalSpending = useMemo(() => memberSpendingData.reduce((sum, member) => sum + member.spending, 0), [memberSpendingData])
 

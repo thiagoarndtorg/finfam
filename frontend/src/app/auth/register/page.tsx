@@ -128,23 +128,23 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError("");
 
-    //file to s3 here
-
-    // In a real implementation, you would send formData to your Spring Boot API
-    // For now, we'll use the existing register function
-
-    const result = await execute({
-      username: data.name,
-      email: data.email,
-      password: data.password,
-      avatar_url: "",
-    });
-    console.log(result);
-    if (result != null) {
-      router.push("/dashboard");
+    try {
+      const result = await execute({
+        username: data.name,
+        email: data.email,
+        password: data.password,
+        avatar_url: "",
+      });
+      
+      if (result != null) {
+        // Redirect to login with success message
+        router.push("/auth/login?registered=true");
+      }
+    } catch (error: any) {
+      setError(error?.message || t("auth.registrationError"));
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
   return (

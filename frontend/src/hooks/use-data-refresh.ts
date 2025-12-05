@@ -49,15 +49,19 @@ export function useDataRefresh() {
   }, [familyId, refreshFamilyFinancials]);
 
   const refreshBankData = useCallback(async (itemId: string) => {
+    if (!familyId) {
+      console.warn("No familyId available for bank data refresh");
+      return;
+    }
     try {
       console.log("Refreshing bank statement...");
-      await refreshBankStatement(itemId);
+      await refreshBankStatement(itemId, familyId);
       console.log("Bank data refresh completed successfully");
     } catch (error) {
       console.error("Failed to refresh bank data:", error);
       throw error; // Re-throw to let calling component handle it
     }
-  }, [refreshBankStatement]);
+  }, [refreshBankStatement, familyId]);
 
   return {
     refreshAllData,

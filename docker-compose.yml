@@ -37,7 +37,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       FRONTEND_URL: ${FRONTEND_URL}
-      
+
       SPRING_FLYWAY_URL: jdbc:mysql://mysql:3306/${DB_NAME}
       SPRING_FLYWAY_USER: ${DB_USER}
       SPRING_FLYWAY_PASSWORD: ${DB_PASSWORD}
@@ -73,12 +73,13 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     env_file:
       - .env
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
       # Observability 
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME_FRONTEND}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -86,7 +87,7 @@ services:
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES_FRONTEND}
- 
+
     ports:
       - "3000:3000"
     depends_on:
@@ -98,6 +99,7 @@ services:
 
 volumes:
   mysql_data:
+
 
 networks:
   appnet:

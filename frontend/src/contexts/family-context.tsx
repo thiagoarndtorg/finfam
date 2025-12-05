@@ -81,21 +81,21 @@ export function FamilyProvider({
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [notificationRefreshTrigger, setNotificationRefreshTrigger] = useState<number>(0);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
-  
+
   const { execute: getUserFamilies } = useUserFamilies();
   const { execute: getCurrentUserRole } = useCurrentUserRole();
   const { execute: loadFamilyMembers } = useFamilyMembers();
   const { execute: loadFamilyTransactions } = useFamilyTransactions();
-  
+
   // Compute filtered transactions based on selected users and categories
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
       // Filter by user
       const matchesUser = selectedUserIds.length === 0 || selectedUserIds.includes(transaction.userId);
-      
+
       // Filter by category
       const matchesCategory = selectedCategoryIds.length === 0 || (transaction.category && selectedCategoryIds.includes(transaction.category.id));
-      
+
       // Apply both filters together (AND logic)
       return matchesUser && matchesCategory;
     });
@@ -103,7 +103,7 @@ export function FamilyProvider({
 
   // Função para atualizar uma transação específica
   const updateTransaction = (id: number, updates: Partial<Transaction>) => {
-    setTransactions(prev => 
+    setTransactions(prev =>
       prev.map(t => t.id === id ? { ...t, ...updates } : t)
     );
   };
@@ -116,13 +116,13 @@ export function FamilyProvider({
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedFamilyId", newFamilyId.toString());
     }
-    
+
     // Reset all data for complete refresh
     setFamilyMembers([]);
     setTransactions([]);
     setCategories([]);
     setCurrentUserRole(null);
-    
+
     // Refresh will happen automatically via useEffect when familyId changes
   };
 
@@ -174,10 +174,10 @@ export function FamilyProvider({
         const families = await getUserFamilies({ suppressToast: true });
         if (families) {
           setUserFamilies(families);
-          
+
           // Try to get saved familyId from localStorage
           const savedFamilyId = typeof window !== "undefined" ? localStorage.getItem("selectedFamilyId") : null;
-          
+
           if (savedFamilyId && families.find(f => f.id === parseInt(savedFamilyId))) {
             setFamilyId(parseInt(savedFamilyId));
           } else if (families.length > 0) {
@@ -196,7 +196,7 @@ export function FamilyProvider({
         setIsLoading(false);
       }
     };
-    
+
     loadUserFamilies();
   }, [getUserFamilies]);
 
@@ -211,7 +211,7 @@ export function FamilyProvider({
         setIsLoading(false);
         return;
       }
-      
+
       setIsLoading(true);
       setError(null);
 
@@ -339,15 +339,15 @@ export function FamilyProvider({
 
   return (
     <FamilyContext.Provider
-      value={{ 
-        familyId: familyId || 0, 
-        setFamilyId, 
+      value={{
+        familyId: familyId || 0,
+        setFamilyId,
         userFamilies,
         switchFamily,
-        familyData, 
-        isLoading, 
-        error, 
-        setTransactions, 
+        familyData,
+        isLoading,
+        error,
+        setTransactions,
         transactions,
         filteredTransactions,
         categories,
@@ -371,7 +371,7 @@ export function FamilyProvider({
   );
 }
 
-// Custom hook to use the family context
+
 export function useFamily() {
   const context = useContext(FamilyContext);
 

@@ -40,6 +40,25 @@ public class EmailService {
         }
     }
 
+    public void sendVerificationEmail(String toEmail, String username, String verificationToken) {
+        try {
+            String verificationUrl = frontendUrl + "/auth/verify-email?token=" + verificationToken;
+            
+            String htmlContent = buildVerificationEmailHtml(username, verificationUrl);
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setTo(toEmail);
+            helper.setSubject("Verifique seu email - FinFam");
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+        } catch (MailException | MessagingException e) {
+            throw new RuntimeException("Falha ao enviar email de verificação", e);
+        }
+    }
+
     private String buildInvitationEmailHtml(String inviterName, String familyName, String invitationUrl) {
         return """
             <!DOCTYPE html>
@@ -81,6 +100,48 @@ public class EmailService {
             </body>
             </html>
             """.formatted(inviterName, familyName, invitationUrl);
+    }
+
+    private String buildVerificationEmailHtml(String username, String verificationUrl) {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                    .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+                    .button { display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+                    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Verifique seu email</h1>
+                    </div>
+                    <div class="content">
+                        <p>Olá, <strong>%s</strong>!</p>
+                        <p>Obrigado por se registrar no FinFam. Para completar seu cadastro, por favor verifique seu endereço de email clicando no botão abaixo:</p>
+                        <p style="text-align: center;">
+                            <a href="%s" class="button">Verificar Email</a>
+                        </p>
+                        <p style="color: #6b7280; font-size: 14px;">
+                            Se você não criou uma conta no FinFam, pode ignorar este email.
+                        </p>
+                        <p style="color: #6b7280; font-size: 14px;">
+                            Este link expira em 24 horas.
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>FinFam - Gestão Financeira Familiar</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(username, verificationUrl);
     }
 }
 

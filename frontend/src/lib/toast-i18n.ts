@@ -37,15 +37,23 @@ function t(key: string, params?: Record<string, string | number>): string {
   return value;
 }
 
+// Helper to generate a consistent ID from a key
+function getToastId(key: string): string {
+  return `toast-${key}`;
+}
+
 export const toastI18n = {
   success: (key: string, params?: Record<string, string | number>) => {
-    toast.success(t(key, params));
+    const id = getToastId(key);
+    toast.success(t(key, params), { id });
   },
   error: (key: string, params?: Record<string, string | number>) => {
-    toast.error(t(key, params));
+    const id = getToastId(key);
+    toast.error(t(key, params), { id });
   },
   info: (key: string, params?: Record<string, string | number>) => {
-    toast(t(key, params), { icon: "ℹ️" });
+    const id = getToastId(key);
+    toast(t(key, params), { id, icon: "ℹ️" });
   },
 };
 

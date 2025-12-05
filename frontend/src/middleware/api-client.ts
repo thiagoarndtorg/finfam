@@ -50,8 +50,11 @@ export class ApiClient {
       ...customHeaders,
     };
 
-    // Only add Authorization header if token exists and endpoint isn't /register, /login, or /accept-invitation
-    const isAuthEndpoint = endpoint.endsWith("/register") || endpoint.endsWith("/login") || endpoint.endsWith("/accept-invitation");
+    // Only add Authorization header if token exists and endpoint isn't /register, /login, /verify-email, or /accept-invitation
+    const isAuthEndpoint = endpoint.endsWith("/register") || 
+                          endpoint.endsWith("/login") || 
+                          endpoint.includes("/verify-email") ||
+                          endpoint.endsWith("/accept-invitation");
     if (token && !isAuthEndpoint) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -73,8 +76,41 @@ export class ApiClient {
       const contentType = response.headers.get("content-type");
       const isJson = contentType && contentType.includes("application/json");
 
-      // Processar resposta
-      const responseData = isJson ? await response.json() : await response.text();
+      // Processar resposta - IMPORTANTE: response.text() só pode ser chamado uma vez
+      let responseData;
+      const text = await response.text();
+      
+      try {
+        if (isJson && text) {
+          // Try to parse JSON
+          responseData = JSON.parse(text);
+        } else {
+          // Not JSON or empty, use text as-is
+          responseData = text || (response.ok ? {} : "Unknown error");
+        }
+      } catch (parseError) {
+        // JSON parsing failed
+        console.warn("JSON parse failed:", parseError);
+        // If response is OK, don't fail - return empty object or text
+        if (response.ok) {
+          console.warn("Response is OK but JSON parse failed, treating as success with text");
+          responseData = text || {};
+        } else {
+          // Response is not OK, use text as error message
+          responseData = text || "Unknown error";
+        }
+      }
+
+      // Log for debugging
+      if (url.includes("verify-email")) {
+        console.log("🔍 Verify email response:", {
+          ok: response.ok,
+          status: response.status,
+          contentType,
+          isJson,
+          responseData
+        });
+      }
 
       // Verificar se a resposta foi bem-sucedida
       if (!response.ok) {
@@ -83,8 +119,13 @@ export class ApiClient {
           throw new ApiError("Unauthorized", response.status, responseData);
         }
 
+        // Extract message from ErrorResponse object
+        const errorMessage = (isJson && responseData?.message) 
+          ? responseData.message 
+          : (typeof responseData === 'string' ? responseData : "API request failed");
+
         throw new ApiError(
-          responseData.message || "API request failed",
+          errorMessage,
           response.status,
           responseData
         );
@@ -92,11 +133,22 @@ export class ApiClient {
 
       return responseData as T;
     } catch (error) {
+      // If it's already an ApiError, re-throw it
       if (error instanceof ApiError) {
         throw error;
       }
 
-      throw new ApiError(error instanceof Error ? error.message : "Network error", 0, null);
+      // For network errors or other exceptions, wrap in ApiError
+      // But check if it's a parsing error that might be a false positive
+      const errorMessage = error instanceof Error ? error.message : "Network error";
+      
+      // If the error message suggests it might be a parsing issue with a successful response,
+      // log it but don't throw (this shouldn't happen, but just in case)
+      if (errorMessage.includes("JSON") && url.includes("verify-email")) {
+        console.warn("Possible JSON parsing issue, but response might be successful:", error);
+      }
+      
+      throw new ApiError(errorMessage, 0, null);
     }
   }
 

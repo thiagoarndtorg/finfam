@@ -66,9 +66,11 @@ export function useApi<TData, TArgs extends any[]>(
 
         setState({ data: null, isLoading: false, error: apiError });
 
-        // 🔥 Show toast notification with the error message (unless suppressed)
-        if (!options?.suppressToast) {
-          toastI18n.error("toasts.error.apiError");
+        // 🔥 Show toast notification with the backend error message (unless suppressed)
+        // The error message comes from CustomException in the backend
+        if (!options?.suppressToast && apiError.message) {
+          // Use the actual error message from the backend (from CustomException)
+          toast.error(apiError.message, { id: `api-error-${Date.now()}` });
         }
 
         throw apiError;
@@ -122,10 +124,28 @@ export function useLogin() {
  * Hook para fazer registro
  */
 export function useRegister() {
-  const { updateSettings } = useSettings();
   const apiMethod = useCallback(
     (userData: { username: string; email: string; password: string; avatar_url: string }) =>
-      apiClient.post("/register", userData).then((res: any) => {
+      apiClient.post("/register", userData).then(() => {
+        // Registration successful, email verification sent
+        return { success: true };
+      }),
+    []
+  );
+  return useApi<
+    { success: boolean },
+    [{ username: string; email: string; password: string; avatar_url: string }]
+  >(apiMethod);
+}
+
+/**
+ * Hook para fazer login com Google
+ */
+export function useGoogleAuth() {
+  const { updateSettings } = useSettings();
+  const apiMethod = useCallback(
+    (googleData: { googleId: string; email: string; name: string; picture: string; idToken: string }) =>
+      apiClient.post("/auth/google", googleData).then((res: any) => {
         setAuthToken(res.token);
 
         updateSettings({
@@ -139,7 +159,7 @@ export function useRegister() {
   );
   return useApi<
     { token: string; user: any },
-    [{ username: string; email: string; password: string; avatar_url: string }]
+    [{ googleId: string; email: string; name: string; picture: string; idToken: string }]
   >(apiMethod);
 }
 

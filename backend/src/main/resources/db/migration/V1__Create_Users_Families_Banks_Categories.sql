@@ -3,8 +3,17 @@ CREATE TABLE IF NOT EXISTS users (
                                      username VARCHAR(255),
     email VARCHAR(255) UNIQUE,
     password VARCHAR(255) NOT NULL,
-    avatar_url VARCHAR(255)
+    avatar_url VARCHAR(255),
+
+    email_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255),
+    google_id VARCHAR(255),
+
+
+    INDEX idx_verification_token (verification_token),
+    INDEX idx_google_id (google_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 CREATE TABLE IF NOT EXISTS families (
                                         id INT AUTO_INCREMENT PRIMARY KEY,

@@ -5,6 +5,7 @@ import com.example.finfam.model.Account;
 import com.example.finfam.model.Bank;
 import com.example.finfam.repository.AccountRepository;
 import com.example.finfam.repository.BankRepository;
+import com.example.finfam.service.FamilyMemberService;
 import com.example.finfam.utils.BankEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.List;
 public class AccountService {
     private final AccountRepository accountRepo;
     private final BankRepository bankRepository;
+    private final FamilyMemberService familyMemberService;
 
     public Account saveAccount(int userId, int familyId, int bankId, String itemId, String name, double balance) {
         Bank bank = bankRepository.findById(bankId);
@@ -53,6 +55,43 @@ public class AccountService {
         return accountRepo.existsByUserIdAndBankId(userId, bank.getId());
     }
 
+    // Verificar se itemId já existe na família específica
+    public boolean existsByItemIdAndFamilyId(String itemId, Integer familyId) {
+        return accountRepo.existsByItemIdAndFamilyId(itemId, familyId);
+    }
+
+    // Verificar se usuário já tem conta deste banco na família específica
+    public boolean existsByUserIdAndFamilyIdAndBankCode(Integer userId, Integer familyId, String bankCode) {
+        Bank bank = bankRepository.findByBankCode(bankCode).orElse(null);
+        if (bank == null) {
+            System.out.println("DEBUG AccountService - Bank not found for bankCode: " + bankCode);
+            return false;
+        }
+        
+        // Debug: listar TODAS as contas do usuário nesta família ANTES da verificação
+        List<Account> allUserAccounts = accountRepo.findByUserIdAndFamilyId(userId, familyId);
+        System.out.println("DEBUG AccountService - ALL user accounts in family " + familyId + ": " + allUserAccounts.size());
+        for (Account acc : allUserAccounts) {
+            System.out.println("  Account ID: " + acc.getId() + ", BankId: " + acc.getBankId() + 
+                             ", IsActive: " + acc.getIsActive() + ", ItemId: " + acc.getItemId() + 
+                             ", UserId: " + acc.getUserId() + ", FamilyId: " + acc.getFamilyId());
+        }
+        
+        // Verificar manualmente também para debug
+        List<Account> matchingAccounts = allUserAccounts.stream()
+            .filter(acc -> acc.getBankId().equals(bank.getId()) && 
+                           Boolean.TRUE.equals(acc.getIsActive()))
+            .toList();
+        System.out.println("DEBUG AccountService - Matching active accounts: " + matchingAccounts.size());
+        
+        boolean exists = accountRepo.existsByUserIdAndFamilyIdAndBankId(userId, familyId, bank.getId());
+        System.out.println("DEBUG AccountService - Query result: userId=" + userId + 
+                          ", familyId=" + familyId + ", bankCode=" + bankCode + ", bankId=" + bank.getId() + 
+                          ", exists=" + exists);
+        
+        return exists;
+    }
+
     public List<Account> getAccountsByFamily(int familyId) {
         return accountRepo.findByFamilyId(familyId);
     }
@@ -65,8 +104,16 @@ public class AccountService {
         Account account = accountRepo.findById(accountId)
                 .orElseThrow(() -> new CustomException("Account not found", HttpStatus.NOT_FOUND));
 
-        if (!account.getUserId().equals(userId) || !account.getFamilyId().equals(familyId)) {
-            throw new CustomException("Account does not belong to user/family", HttpStatus.FORBIDDEN);
+        if (!account.getFamilyId().equals(familyId)) {
+            throw new CustomException("Account does not belong to family", HttpStatus.FORBIDDEN);
+        }
+
+        // Check if user is admin OR the account owner
+        boolean isAdmin = familyMemberService.isAdmin(userId, familyId);
+        boolean isAccountOwner = account.getUserId().equals(userId);
+        
+        if (!isAdmin && !isAccountOwner) {
+            throw new CustomException("Apenas administradores podem desconectar contas de outros usuários", HttpStatus.FORBIDDEN);
         }
 
         account.setIsActive(false);
@@ -74,7 +121,17 @@ public class AccountService {
     }
 
     public int disconnectAllUserAccounts(Integer userId, Integer familyId) {
-        List<Account> accounts = accountRepo.findByUserIdAndFamilyIdAndIsActive(userId, familyId, true);
+        // Check if user is admin - only admins can disconnect all accounts
+        boolean isAdmin = familyMemberService.isAdmin(userId, familyId);
+        if (!isAdmin) {
+            throw new CustomException("Apenas administradores podem desconectar todas as contas", HttpStatus.FORBIDDEN);
+        }
+        
+        // Get all active accounts in the family (not just user's accounts)
+        List<Account> accounts = accountRepo.findByFamilyId(familyId).stream()
+                .filter(account -> Boolean.TRUE.equals(account.getIsActive()))
+                .toList();
+        
         accounts.forEach(account -> account.setIsActive(false));
         accountRepo.saveAll(accounts);
         return accounts.size();

@@ -37,6 +37,7 @@
     "loginSuccess": "Login realizado com sucesso",
     "registerSuccess": "Registro realizado com sucesso",
     "invalidCredentials": "Email ou senha inválidos",
+    "emailNotVerified": "Por favor, verifique seu email antes de fazer login",
     "emailRequired": "Email é obrigatório",
     "passwordRequired": "Senha é obrigatória",
     "passwordMinLength": "A senha deve ter pelo menos 8 caracteres",
@@ -63,7 +64,23 @@
     "nameMinLength": "O nome deve ter pelo menos 2 caracteres",
     "passwordsDoNotMatch": "As senhas não coincidem",
     "hidePassword": "Ocultar senha",
-    "showPassword": "Mostrar senha"
+    "showPassword": "Mostrar senha",
+    "checkEmailVerification": "Por favor, verifique seu email para verificar sua conta",
+    "loginWithGoogle": "Continuar com Google",
+    "or": "Ou",
+    "googleLoginError": "Erro ao fazer login com Google",
+    "googleClientIdNotConfigured": "Google OAuth não está configurado. Por favor, entre em contato com o suporte.",
+    "googleNotLoaded": "Falha ao carregar o serviço de autenticação do Google",
+    "loginError": "Erro ao fazer login",
+    "registrationError": "Erro ao registrar conta",
+    "verifyEmail": "Verificar Email",
+    "verifyingEmail": "Verificando seu email...",
+    "emailVerified": "Email verificado com sucesso!",
+    "emailVerifiedSuccess": "Seu email foi verificado com sucesso",
+    "verificationFailed": "Falha na verificação de email",
+    "verificationError": "Token de verificação inválido ou expirado",
+    "invalidVerificationToken": "Token de verificação inválido",
+    "backToLogin": "Voltar para Login"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -196,7 +213,8 @@
     "allAccountsDisconnected": "Todas as contas foram desconectadas",
     "connectedAccounts": "Contas Conectadas",
     "noAccountsConnected": "Nenhuma conta conectada",
-    "unknownDate": "Data desconhecida"
+    "unknownDate": "Data desconhecida",
+    "managedBy": "Gerenciada por {username}"
   },
   "analytics": {
     "title": "Análises",

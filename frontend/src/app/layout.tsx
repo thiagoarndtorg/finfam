@@ -38,7 +38,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <SettingsProvider>
                 <FamilyProvider>
                   <TooltipProvider delayDuration={0}>
-                    <Toaster position="bottom-center" />
+                    <Toaster 
+                      position="bottom-center"
+                      toastOptions={{
+                        duration: 4000,
+                        id: undefined, // Allow custom IDs
+                      }}
+                    />
                     {children}
                   </TooltipProvider>
                 </FamilyProvider>

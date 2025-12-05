@@ -37,6 +37,7 @@
     "loginSuccess": "Login successful",
     "registerSuccess": "Registration successful",
     "invalidCredentials": "Invalid email or password",
+    "emailNotVerified": "Please verify your email before logging in",
     "emailRequired": "Email is required",
     "passwordRequired": "Password is required",
     "passwordMinLength": "Password must be at least 8 characters",
@@ -63,7 +64,23 @@
     "nameMinLength": "Name must be at least 2 characters",
     "passwordsDoNotMatch": "Passwords do not match",
     "hidePassword": "Hide password",
-    "showPassword": "Show password"
+    "showPassword": "Show password",
+    "checkEmailVerification": "Please check your email to verify your account",
+    "loginWithGoogle": "Continue with Google",
+    "or": "Or",
+    "googleLoginError": "Error logging in with Google",
+    "googleClientIdNotConfigured": "Google OAuth is not configured. Please contact support.",
+    "googleNotLoaded": "Google authentication service failed to load",
+    "loginError": "Error logging in",
+    "registrationError": "Error registering account",
+    "verifyEmail": "Verify Email",
+    "verifyingEmail": "Verifying your email...",
+    "emailVerified": "Email verified successfully!",
+    "emailVerifiedSuccess": "Your email has been verified successfully",
+    "verificationFailed": "Email verification failed",
+    "verificationError": "Invalid or expired verification token",
+    "invalidVerificationToken": "Invalid verification token",
+    "backToLogin": "Back to Login"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -196,7 +213,8 @@
     "allAccountsDisconnected": "All accounts have been disconnected",
     "connectedAccounts": "Connected Accounts",
     "noAccountsConnected": "No accounts connected",
-    "unknownDate": "Unknown date"
+    "unknownDate": "Unknown date",
+    "managedBy": "Managed by {username}"
   },
   "analytics": {
     "title": "Analytics",

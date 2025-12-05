@@ -34,6 +34,15 @@ public class User implements UserDetails {
 
     private String avatarUrl;
 
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "google_id")
+    private String googleId;
+
     @OneToMany(mappedBy = "user")
     private List<FamilyMember> familyMemberships = new ArrayList<>();
 

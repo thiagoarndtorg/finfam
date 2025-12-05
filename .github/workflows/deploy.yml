@@ -23,6 +23,7 @@ jobs:
           PLUGGY_ID=${{ vars.PLUGGY_ID }}
           PLUGGY_SECRET=${{ secrets.PLUGGY_SECRET }}
           SECRET_KEY=${{ secrets.SECRET_KEY }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
 
           DB_NAME=${{ vars.DB_NAME }}
           DB_USER=${{ vars.DB_USER }}

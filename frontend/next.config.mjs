@@ -1,16 +1,19 @@
 let userConfig = {}
 try {
   userConfig = (await import('./v0-user-next.config')).default || {}
-} catch {}
+} catch { }
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compiler: {
+    removeConsole: true,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
-  }, 
+  },
   images: {
     unoptimized: true,
   },

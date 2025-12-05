@@ -14,7 +14,7 @@ const MEMBER_COLORS = ["#0ea5e9", "#8b5cf6", "#f43f5e", "#10b981"]
 export function CategoryAnalysis() {
   const [selectedCategory, setSelectedCategory] = useState("")
   const [timeframe, setTimeframe] = useState("month")
-  const { transactions: contextTransactions } = useFamily()
+  const { transactions: contextTransactions, familyMembers } = useFamily()
 
   // Build transactions from context
   const transactions = useMemo(() => {
@@ -103,6 +103,14 @@ export function CategoryAnalysis() {
       return isWithinInterval(date, { start, end: now })
     })
 
+    // Create a map of userId -> username from familyMembers
+    const memberNameMap = new Map<number, string>()
+    if (familyMembers) {
+      familyMembers.forEach((member) => {
+        memberNameMap.set(member.userId, member.username || `User ${member.userId}`)
+      })
+    }
+
     // Group by userId
     const userMap = new Map<number, { name: string; amount: number }>()
     let colorIndex = 0
@@ -112,8 +120,10 @@ export function CategoryAnalysis() {
       if (!userId) continue
 
       if (!userMap.has(userId)) {
+      
+        const username = memberNameMap.get(userId) || `User ${userId}`
         userMap.set(userId, {
-          name: `User ${userId}`,
+          name: username,
           amount: 0
         })
         colorIndex++
@@ -124,7 +134,7 @@ export function CategoryAnalysis() {
     }
 
     return Array.from(userMap.values())
-  }, [transactions, timeframe, selectedCategory])
+  }, [transactions, timeframe, selectedCategory, familyMembers])
 
   // Calculate monthly trends for selected category
   const trendData = useMemo(() => {

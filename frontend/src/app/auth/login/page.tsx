@@ -1,5 +1,6 @@
 "use client";
 
+export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -191,7 +192,7 @@ export default function LoginPage() {
     } catch (error: any) {
       // Get error message from ApiError (this comes from CustomException in backend)
       const errorMessage = error?.message || error?.data?.message || "";
-      
+
       // If we have a backend error message, show it directly
       if (errorMessage) {
         toast.error(errorMessage, { id: `login-error-${Date.now()}` });

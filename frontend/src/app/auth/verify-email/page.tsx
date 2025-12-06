@@ -1,5 +1,7 @@
 "use client";
 
+
+export const dynamic = "force-dynamic";
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +29,7 @@ export default function VerifyEmailPage() {
 
     const token = searchParams.get("token");
     console.log("Token from URL:", token);
-    
+
     if (!token) {
       console.error("No token found in URL");
       setStatus("error");
@@ -38,16 +40,16 @@ export default function VerifyEmailPage() {
     const verifyEmail = async () => {
       // Mark as verified immediately to prevent duplicate calls
       hasVerified.current = true;
-      
+
       try {
         console.log("Calling verify-email endpoint with token:", token);
         const result = await apiClient.get<{ message: string }>(`/verify-email?token=${encodeURIComponent(token)}`);
         console.log("✅ Verification successful, result:", result);
-        
+
         // If we get here, verification was successful (no exception thrown)
         setStatus("success");
         toastI18n.success("auth.emailVerifiedSuccess");
-        
+
         // Redirect to login after 2 seconds
         setTimeout(() => {
           router.push("/auth/login");
@@ -57,7 +59,7 @@ export default function VerifyEmailPage() {
         console.error("Error status:", error?.status);
         console.error("Error message:", error?.message);
         console.error("Error data:", error?.data);
-        
+
         // Only show error if it's actually an HTTP error (status 400+)
         const errorStatus = error?.status;
         if (errorStatus && errorStatus >= 400) {

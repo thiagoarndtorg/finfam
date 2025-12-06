@@ -1,7 +1,7 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
@@ -44,9 +44,24 @@ declare global {
   }
 }
 
+function RegistrationToast() {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    if (searchParams.get("registered") === "true") {
+     
+      const timer = setTimeout(() => {
+        toastI18n.info("auth.checkEmailVerification");
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+  
+  return null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { t } = useI18n();
   const { theme, setTheme } = useTheme()
   const { execute } = useLogin();
@@ -55,18 +70,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // Show toast if coming from registration (only once)
-  useEffect(() => {
-    if (searchParams.get("registered") === "true") {
-      // Use a small delay to ensure the page is fully loaded
-      const timer = setTimeout(() => {
-        toastI18n.info("auth.checkEmailVerification");
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
 
-  // Load Google Identity Services
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) {
@@ -74,9 +78,9 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if script already exists
+
     if (document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-      // Script already loaded, just initialize
+
       if (window.google) {
         window.google.accounts.id.initialize({
           client_id: clientId,
@@ -99,7 +103,6 @@ export default function LoginPage() {
           callback: handleGoogleSignIn,
         });
 
-        // Render the Google button in a hidden container
         const buttonContainer = document.getElementById("google-signin-button");
         if (buttonContainer) {
           window.google.accounts.id.renderButton(buttonContainer, {
@@ -114,7 +117,7 @@ export default function LoginPage() {
     };
     script.onerror = () => {
       console.error("Failed to load Google Identity Services");
-      //toast.error(t("auth.googleNotLoaded"));
+   
     };
     document.body.appendChild(script);
 
@@ -128,7 +131,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async (response: any) => {
     setIsGoogleLoading(true);
     try {
-      // Decode the credential to get user info
+   
       const base64Url = response.credential.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(
@@ -151,7 +154,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (error: any) {
-      //toast.error(error?.message || t("auth.googleLoginError"));
+   
     } finally {
       setIsGoogleLoading(false);
     }
@@ -190,14 +193,14 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (error: any) {
-      // Get error message from ApiError (this comes from CustomException in backend)
+    
       const errorMessage = error?.message || error?.data?.message || "";
 
-      // If we have a backend error message, show it directly
+ 
       if (errorMessage) {
         toast.error(errorMessage, { id: `login-error-${Date.now()}` });
       } else {
-        // Fallback to translated message if no backend message
+       
         toastI18n.error("auth.invalidCredentials");
       }
     } finally {
@@ -207,11 +210,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        <LanguageToggle />
-        <ThemeToggle />
-      </div>
+    <>
+      <Suspense fallback={null}>
+        <RegistrationToast />
+      </Suspense>
+      <div className="w-full max-w-md">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
 
       <Card className="w-full">
         <CardHeader className="space-y-1">
@@ -329,12 +336,12 @@ export default function LoginPage() {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
-                    // Trigger click on the hidden Google button
+                 
                     const googleButton = document.querySelector('#google-signin-button iframe, #google-signin-button div[role="button"]') as HTMLElement;
                     if (googleButton) {
                       googleButton.click();
                     } else {
-                      // Fallback: try to find any clickable element inside
+                    
                       const container = document.getElementById("google-signin-button");
                       if (container) {
                         const clickable = container.querySelector('div[role="button"], button, iframe') as HTMLElement;
@@ -389,5 +396,6 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
+    </>
   );
 }

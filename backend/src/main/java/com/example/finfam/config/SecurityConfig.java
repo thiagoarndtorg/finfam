@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .cors().and()
                 .authorizeHttpRequests()
                 .requestMatchers("/api/register", "/api/login", "/api/verify-email", "/api/family/accept-invitation", "/api/auth/google").permitAll()
+                .requestMatchers("/api/health").permitAll() 
                 .requestMatchers(
                 "/v3/api-docs/**",
                 "/swagger-ui/**",

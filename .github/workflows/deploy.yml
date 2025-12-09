@@ -53,8 +53,7 @@ jobs:
 
       - name: Build and start containers with cache
         run: |
-          # Build with parallel builds and cache for faster builds
-          docker compose build --parallel
+          docker compose build
           docker compose up -d
 
       - name: Cleanup unused images

@@ -10,13 +10,17 @@ import { InviteMemberModal } from "@/components/invite-member-modal"
 import { EditMemberModal } from "@/components/edit-member-modal"
 import { DeleteMemberModal } from "@/components/delete-member-modal"
 import { useFamily } from "@/contexts/family-context"
-import { useFamilyMembers, useInviteMember, useUpdateMemberRole, useRemoveMember, useResendInvite } from "@/hooks/use-api"
+import { useFamilyMembers, useInviteMember, useUpdateMemberRole, useRemoveMember, useResendInvite, useLeaveFamily } from "@/hooks/use-api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useI18n } from "@/contexts/i18n-context";
+import { useI18n } from "@/contexts/i18n-context"
+import { getUserIdFromToken } from "@/lib/auth"
+import { LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function FamilyMembersPage() {
     const { t } = useI18n();
-  const { familyId } = useFamily();
+  const { familyId, userFamilies, switchFamily } = useFamily();
+  const router = useRouter();
   const [members, setMembers] = useState([])
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState(null)
@@ -27,6 +31,12 @@ export default function FamilyMembersPage() {
   const { execute: updateMemberRole } = useUpdateMemberRole();
   const { execute: removeMember } = useRemoveMember();
   const { execute: resendInvite } = useResendInvite();
+  const { execute: leaveFamily } = useLeaveFamily();
+
+  // Get current user ID and check if they are the owner
+  const currentUserId = getUserIdFromToken();
+  const currentFamily = userFamilies.find(f => f.id === familyId);
+  const isOwner = currentFamily?.createdBy === currentUserId;
 
   useEffect(() => {
     if (familyId && !isLoadingMembers) {
@@ -84,6 +94,26 @@ export default function FamilyMembersPage() {
     }
   }
 
+  const handleLeaveFamily = async () => {
+    if (!confirm(t("family.confirmLeave") || "Are you sure you want to leave this family? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await leaveFamily({ familyId });
+      // Switch to another family or redirect to dashboard
+      const otherFamilies = userFamilies.filter(f => f.id !== familyId);
+      if (otherFamilies.length > 0) {
+        switchFamily(otherFamilies[0].id);
+      } else {
+        router.push("/");
+      }
+    } catch (error: any) {
+      console.error("Error leaving family:", error);
+      alert(error.message || t("family.errorLeave") || "Error leaving family");
+    }
+  }
+
   const mapRole = (role) => {
     return role === "ADMIN" ? "admin" : "member";
   }
@@ -100,10 +130,18 @@ export default function FamilyMembersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">{t("family.members")}</h1>
-        <Button onClick={() => setIsInviteModalOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          {t("family.inviteMember")}
-        </Button>
+        <div className="flex gap-2">
+          {!isOwner && (
+            <Button variant="outline" onClick={handleLeaveFamily}>
+              <LogOut className="mr-2 h-4 w-4" />
+              {t("family.leaveFamily") || "Leave Family"}
+            </Button>
+          )}
+          <Button onClick={() => setIsInviteModalOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            {t("family.inviteMember")}
+          </Button>
+        </div>
       </div>
 
       <Card>

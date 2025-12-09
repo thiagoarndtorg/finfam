@@ -1,4 +1,4 @@
-package com.example.finfam; // Replace with your package name
+package com.example.finfam; 
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

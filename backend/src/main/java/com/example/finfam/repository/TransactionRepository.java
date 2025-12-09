@@ -19,7 +19,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
 
     @Query("SELECT t.pluggyId FROM Transaction t")
     List<String> findAllPluggyIds();
-    // Buscar transação pelo pluggyId
+ 
     Optional<Transaction> findByPluggyId(String pluggyId);
 
 

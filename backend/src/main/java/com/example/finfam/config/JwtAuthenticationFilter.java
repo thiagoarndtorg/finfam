@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwtToken = authHeader.substring(7);
         userEmail = jwtService.extractUsername(jwtToken);
 
-        //User not authenticated
+ 
         if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
             try {
                 UserDetails userDetails = this.userService.loadUserByUsername(userEmail);
@@ -59,8 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } catch (UsernameNotFoundException e) {
-                // User referenced in JWT does not exist in database
-                // Return 401 Unauthorized so frontend can handle logout gracefully
+    
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User not found");
                 return;
             }

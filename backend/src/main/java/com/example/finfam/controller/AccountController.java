@@ -44,7 +44,7 @@ public class AccountController {
             @Parameter(description = "Family ID") @RequestBody SyncAccountRequest request,
             @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token) {
         try {
-            // Extract userId from JWT
+       
             String jwtToken = token.substring(7);
             Integer userId = jwtService.extractUserId(jwtToken);
 
@@ -52,7 +52,7 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            // Call service to sync account
+       
             OpenBankStatementResponse response = openBankService.syncSingleAccount(accountId, userId, request.getFamilyId());
             return ResponseEntity.ok(response);
 
@@ -79,7 +79,7 @@ public class AccountController {
             @Parameter(description = "Family ID") @RequestParam Integer familyId,
             @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token) {
         try {
-            // Extract userId from JWT
+        
             String jwtToken = token.substring(7);
             Integer userId = jwtService.extractUserId(jwtToken);
 
@@ -87,7 +87,7 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            // Call service to disconnect account
+    
             accountService.disconnectAccount(accountId, userId, familyId);
             return ResponseEntity.ok().build();
 
@@ -110,7 +110,7 @@ public class AccountController {
             @Parameter(description = "Family ID") @RequestParam Integer familyId,
             @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token) {
         try {
-            // Extract userId from JWT
+        
             String jwtToken = token.substring(7);
             Integer userId = jwtService.extractUserId(jwtToken);
 
@@ -118,7 +118,7 @@ public class AccountController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            // Call service to disconnect all accounts
+         
             int count = accountService.disconnectAllUserAccounts(userId, familyId);
             return ResponseEntity.ok(new DisconnectAllResponse(count));
 
@@ -127,7 +127,7 @@ public class AccountController {
         }
     }
 
-    // Request DTO for sync endpoint
+
     @lombok.Data
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor
@@ -135,7 +135,7 @@ public class AccountController {
         private Integer familyId;
     }
 
-    // Response DTO for disconnect all accounts endpoint
+   
     @lombok.Data
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor

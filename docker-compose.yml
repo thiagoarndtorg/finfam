@@ -97,8 +97,20 @@ services:
       - appnet
     restart: always
 
+  ml:
+    build: ./python-ml
+    container_name: ml-service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ml_models:/app/user_models
+    networks:
+      - appnet
+    restart: always
+
 volumes:
   mysql_data:
+  ml_models:
 
 
 networks:

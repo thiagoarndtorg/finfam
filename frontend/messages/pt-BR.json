@@ -25,7 +25,8 @@
     "status": "Status",
     "active": "Ativo",
     "pending": "Pendente",
-    "inactive": "Inativo"
+    "inactive": "Inativo",
+    "users": "Usuários"
   },
   "auth": {
     "login": "Entrar",
@@ -138,7 +139,8 @@
     "deleteMember": "Excluir Membro",
     "resendInvite": "Reenviar Convite",
     "noMembers": "Nenhum membro encontrado",
-    "pendingInvites": "Convites Pendentes"
+    "pendingInvites": "Convites Pendentes",
+    "leaveFamily": "Sair da Família"
   },
   "transactions": {
     "title": "Transações",
@@ -275,4 +277,3 @@
     }
   }
 }
-

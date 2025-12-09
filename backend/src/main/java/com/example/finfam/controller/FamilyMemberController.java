@@ -103,6 +103,21 @@ public class FamilyMemberController {
         familyMemberService.acceptInvitation(request.getToken());
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/{familyId}/leave")
+    @Operation(summary = "Sair da família", description = "Permite que um membro saia da família. O criador da família não pode sair.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Membro saiu da família com sucesso"),
+            @ApiResponse(responseCode = "400", description = "O criador da família não pode sair ou é o único administrador"),
+            @ApiResponse(responseCode = "401", description = "Token de autorização inválido"),
+            @ApiResponse(responseCode = "404", description = "Família ou membro não encontrado")
+    })
+    public ResponseEntity<Void> leaveFamily(
+            @Parameter(description = "ID da família") @PathVariable Integer familyId,
+            @Parameter(description = "Token JWT de autorização") @RequestHeader("Authorization") String token) {
+        familyMemberService.leaveFamily(familyId, token);
+        return ResponseEntity.ok().build();
+    }
 }
 
 

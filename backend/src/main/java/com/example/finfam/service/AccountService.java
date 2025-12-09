@@ -55,12 +55,12 @@ public class AccountService {
         return accountRepo.existsByUserIdAndBankId(userId, bank.getId());
     }
 
-    // Verificar se itemId já existe na família específica
+
     public boolean existsByItemIdAndFamilyId(String itemId, Integer familyId) {
         return accountRepo.existsByItemIdAndFamilyId(itemId, familyId);
     }
 
-    // Verificar se usuário já tem conta deste banco na família específica
+
     public boolean existsByUserIdAndFamilyIdAndBankCode(Integer userId, Integer familyId, String bankCode) {
         Bank bank = bankRepository.findByBankCode(bankCode).orElse(null);
         if (bank == null) {
@@ -68,7 +68,7 @@ public class AccountService {
             return false;
         }
         
-        // Debug: listar TODAS as contas do usuário nesta família ANTES da verificação
+     
         List<Account> allUserAccounts = accountRepo.findByUserIdAndFamilyId(userId, familyId);
         System.out.println("DEBUG AccountService - ALL user accounts in family " + familyId + ": " + allUserAccounts.size());
         for (Account acc : allUserAccounts) {
@@ -77,7 +77,7 @@ public class AccountService {
                              ", UserId: " + acc.getUserId() + ", FamilyId: " + acc.getFamilyId());
         }
         
-        // Verificar manualmente também para debug
+       
         List<Account> matchingAccounts = allUserAccounts.stream()
             .filter(acc -> acc.getBankId().equals(bank.getId()) && 
                            Boolean.TRUE.equals(acc.getIsActive()))
@@ -108,7 +108,7 @@ public class AccountService {
             throw new CustomException("Account does not belong to family", HttpStatus.FORBIDDEN);
         }
 
-        // Check if user is admin OR the account owner
+       
         boolean isAdmin = familyMemberService.isAdmin(userId, familyId);
         boolean isAccountOwner = account.getUserId().equals(userId);
         
@@ -121,13 +121,13 @@ public class AccountService {
     }
 
     public int disconnectAllUserAccounts(Integer userId, Integer familyId) {
-        // Check if user is admin - only admins can disconnect all accounts
+      
         boolean isAdmin = familyMemberService.isAdmin(userId, familyId);
         if (!isAdmin) {
             throw new CustomException("Apenas administradores podem desconectar todas as contas", HttpStatus.FORBIDDEN);
         }
         
-        // Get all active accounts in the family (not just user's accounts)
+        
         List<Account> accounts = accountRepo.findByFamilyId(familyId).stream()
                 .filter(account -> Boolean.TRUE.equals(account.getIsActive()))
                 .toList();

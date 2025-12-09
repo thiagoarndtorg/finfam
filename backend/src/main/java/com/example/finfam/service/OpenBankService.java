@@ -265,21 +265,16 @@ public class OpenBankService {
         BankEnum bankEnum = pluggyAccounts.get(0).getBankName();
         String bankCode = bankEnum.getBankCode();
 
-        // Debug: verificar contas existentes
+
         boolean userHasBankInFamily = accountService.existsByUserIdAndFamilyIdAndBankCode(userId, familyId, bankCode);
         boolean itemIdExistsInFamily = accountService.existsByItemIdAndFamilyId(cleanItemId, familyId);
-        
-        System.out.println("DEBUG - userId: " + userId + ", familyId: " + familyId + ", bankCode: " + bankCode);
-        System.out.println("DEBUG - userHasBankInFamily: " + userHasBankInFamily);
-        System.out.println("DEBUG - itemIdExistsInFamily: " + itemIdExistsInFamily);
-        System.out.println("DEBUG - cleanItemId: " + cleanItemId);
 
-        // Verificar se o usuário já tem uma conta deste banco NESTA FAMÍLIA
+
         if (userHasBankInFamily) {
             throw new CustomException("Você já conectou uma conta deste banco (" + bankEnum + ") nesta família");
         }
 
-        // Verificar se este itemId específico já está conectado NESTA FAMÍLIA
+
         if (itemIdExistsInFamily) {
             throw new CustomException("Esta conta específica já está conectada nesta família");
         }

@@ -19,13 +19,11 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     List<Account> findByUserIdAndFamilyIdAndIsActive(Integer userId, Integer familyId, Boolean isActive);
 
-    // Verificar se itemId já existe na família (apenas contas ativas)
+  
     @Query("SELECT COUNT(a) > 0 FROM Account a WHERE a.itemId = :itemId AND a.familyId = :familyId AND (a.isActive = true OR a.isActive IS NULL)")
     boolean existsByItemIdAndFamilyId(@Param("itemId") String itemId, @Param("familyId") Integer familyId);
 
-    // Verificar se usuário já tem conta deste banco na família (apenas contas ativas)
-    // IMPORTANTE: Verifica apenas na família específica, permitindo que o mesmo usuário tenha contas do mesmo banco em famílias diferentes
-    // Usa COALESCE para tratar null como true (contas antigas podem ter isActive null)
+   
     @Query("SELECT COUNT(a) > 0 FROM Account a WHERE a.userId = :userId AND a.familyId = :familyId AND a.bankId = :bankId AND COALESCE(a.isActive, true) = true")
     boolean existsByUserIdAndFamilyIdAndBankId(@Param("userId") Integer userId, @Param("familyId") Integer familyId, @Param("bankId") Integer bankId);
 

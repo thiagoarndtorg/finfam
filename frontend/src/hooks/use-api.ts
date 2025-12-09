@@ -540,6 +540,18 @@ export function useResendInvite() {
   return useApi<void, [{ familyId: number; memberId: number }]>(apiMethod);
 }
 
+export function useLeaveFamily() {
+  const apiMethod = useCallback(
+    ({ familyId }: { familyId: number }) =>
+      apiClient.post(`/family/${familyId}/leave`, {}).then((res: any) => {
+        console.log("Leave family response:", res);
+        return res;
+      }),
+    []
+  );
+  return useApi<void, [{ familyId: number }]>(apiMethod);
+}
+
 export function useCurrentUserRole() {
   const apiMethod = useCallback(
     (familyId: number, userId: number) =>
@@ -562,4 +574,53 @@ export function useAcceptInvitation() {
     []
   );
   return useApi<void, [{ token: string }]>(apiMethod);
+}
+
+// ML Categorization Hooks
+export function useAutoCategorize() {
+  const apiMethod = useCallback(
+    ({ familyId }: { familyId: number }) =>
+      apiClient.post(`/transactions/auto-categorize?familyId=${familyId}`, {}).then((res: any) => {
+        console.log("Auto categorize response:", res);
+        return res;
+      }),
+    []
+  );
+  return useApi<Transaction[], [{ familyId: number }]>(apiMethod);
+}
+
+export function useConfirmCategory() {
+  const apiMethod = useCallback(
+    ({ transactionId, familyId }: { transactionId: number; familyId: number }) =>
+      apiClient.post("/transactions/confirm-category", { transactionId, familyId }).then((res: any) => {
+        console.log("Confirm category response:", res);
+        return res;
+      }),
+    []
+  );
+  return useApi<Transaction, [{ transactionId: number; familyId: number }]>(apiMethod);
+}
+
+export function useRejectCategory() {
+  const apiMethod = useCallback(
+    ({ transactionId, familyId }: { transactionId: number; familyId: number }) =>
+      apiClient.post("/transactions/reject-category", { transactionId, familyId }).then(() => {
+        console.log("Reject category response: success");
+        return undefined;
+      }),
+    []
+  );
+  return useApi<void, [{ transactionId: number; familyId: number }]>(apiMethod);
+}
+
+export function useCorrectCategory() {
+  const apiMethod = useCallback(
+    ({ transactionId, familyId, newCategory }: { transactionId: number; familyId: number; newCategory: string }) =>
+      apiClient.post("/transactions/correct-category", { transactionId, familyId, newCategory }).then((res: any) => {
+        console.log("Correct category response:", res);
+        return res;
+      }),
+    []
+  );
+  return useApi<Transaction, [{ transactionId: number; familyId: number; newCategory: string }]>(apiMethod);
 }

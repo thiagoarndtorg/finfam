@@ -38,17 +38,11 @@ export function EditTransactionModal({
   const { data: apiCategories, execute: fetchCategories } = useFamilyCategories();
   const { t } = useI18n();
 
-  // Mock categories for now (fallback until API wiring/loading is added)
-  const mockCategories = [
-    { id: 101, name: "Salary", icon: "💼", isIncome: true },
-    { id: 102, name: "Freelance", icon: "🧑‍💻", isIncome: true },
-    { id: 201, name: "Groceries", icon: "🛒", isIncome: false },
-    { id: 202, name: "Rent", icon: "🏠", isIncome: false },
-    { id: 203, name: "Transport", icon: "🚌", isIncome: false },
-  ];
 
-  // Use API categories if available, otherwise fallback to context categories, then mocks
-  const categories = apiCategories || contextCategories || mockCategories;
+
+
+
+  const categories = apiCategories || contextCategories;
 
 
   const [description, setDescription] = useState(transaction.description);
@@ -70,11 +64,10 @@ export function EditTransactionModal({
     e.preventDefault();
 
     try {
-      // Convert amount to cents for storage
+
       const amountInCents = Math.round(Number.parseFloat(amount) * 100);
 
-      // Build the updated transaction object with form data
-      // The parent component (RecentTransactions) will handle the API call
+
       const updatedTransaction = {
         ...transaction,
         description,
@@ -85,9 +78,9 @@ export function EditTransactionModal({
         type,
       };
 
-      // Wait for parent to complete API call before showing success
+
       await onSave(updatedTransaction);
-      
+
       toast.success(t("toasts.success.transactionUpdated"));
     } catch (error) {
       console.error("Failed to update transaction:", error);

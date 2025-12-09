@@ -62,9 +62,7 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
     public ResponseEntity<AuthenticationResponse> googleAuth(@RequestBody GoogleAuthRequest request) {
-        // Parse the idToken to extract user info
-        // For now, we'll expect the frontend to send the decoded token data
-        // In production, you should validate the idToken on the backend
+ 
         return ResponseEntity.ok(service.googleLogin(
                 request.getGoogleId(),
                 request.getEmail(),

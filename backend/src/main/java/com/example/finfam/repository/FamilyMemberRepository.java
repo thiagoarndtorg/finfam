@@ -16,7 +16,12 @@ public interface FamilyMemberRepository extends JpaRepository<FamilyMember, Inte
     @Query("SELECT fm.family.id FROM FamilyMember fm WHERE fm.user.id = :userId ORDER BY fm.id ASC LIMIT 1")
     Integer findFirstFamilyIdByUserId(@Param("userId") Integer userId);
 
-    boolean existsByUserIdAndFamilyId(Integer userId, Integer familyId);
+    @Query("SELECT COUNT(fm) FROM FamilyMember fm WHERE fm.user.id = :userId AND fm.family.id = :familyId")
+    long countByUserIdAndFamilyId(@Param("userId") Integer userId, @Param("familyId") Integer familyId);
+    
+    default boolean existsByUserIdAndFamilyId(Integer userId, Integer familyId) {
+        return countByUserIdAndFamilyId(userId, familyId) > 0;
+    }
 
     List<FamilyMember> findByUserId(Integer userId);
 

@@ -44,7 +44,7 @@ public class BudgetService {
             throw new IllegalArgumentException("familyId is required");
         }
 
-        // Validate user is ADMIN
+
         String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
         Integer userId = jwtService.extractUserId(jwtToken);
         if (userId == null) {
@@ -75,7 +75,6 @@ public class BudgetService {
                 throw new IllegalArgumentException("categoryId is required for CATEGORY budgets");
             }
 
-            // Validate category belongs to family
             Category category = categoryRepository.findByIdAndFamilyId(request.getCategoryId(), familyId)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found for this family"));
 
@@ -93,7 +92,7 @@ public class BudgetService {
                 throw new IllegalArgumentException("userId is required for MEMBER budgets");
             }
 
-            // Validate user belongs to family
+
             boolean belongs = familyMemberRepository.existsByUserIdAndFamilyId(request.getUserId(), familyId);
             if (!belongs) {
                 throw new IllegalArgumentException("User does not belong to this family");
@@ -125,7 +124,7 @@ public class BudgetService {
             throw new IllegalArgumentException("familyId, year and month are required");
         }
 
-        // Validate user is ADMIN
+  
         String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
         Integer userId = jwtService.extractUserId(jwtToken);
         if (userId == null) {
@@ -146,7 +145,7 @@ public class BudgetService {
             return create(b, token);
         }).collect(Collectors.toList());
 
-        // After saving all budgets, check all budgets for the month to ensure notifications are created
+      
         checkAllBudgetsForMonth(familyId, year, month);
 
         return responses;
@@ -160,7 +159,7 @@ public class BudgetService {
     }
 
     public void delete(Integer id, Integer familyId, String token) {
-        // Validate user is ADMIN
+    
         String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
         Integer userId = jwtService.extractUserId(jwtToken);
         if (userId == null) {

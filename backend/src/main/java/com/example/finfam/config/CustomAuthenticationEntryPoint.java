@@ -16,8 +16,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
-        // Return 401 Unauthorized instead of 403 Forbidden
-        // This allows the frontend to detect authentication failure and redirect to login
+
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
     }
 }

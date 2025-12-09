@@ -49,4 +49,14 @@ public class Transaction {
     @Convert(converter = TransactionTypeConverter.class)
     @Column(name = "transaction_type")
     private TransactionType transactionType;
+
+
+    @Column(name = "ml_suggested_category")
+    private String mlSuggestedCategory;
+
+    @Column(name = "ml_confidence")
+    private Double mlConfidence;
+
+    @Column(name = "ml_pending_confirmation")
+    private Boolean mlPendingConfirmation = false;
 }

@@ -13,6 +13,7 @@ import {
 import { Users } from "lucide-react"
 import { useFamily } from "@/contexts/family-context"
 import { useFamilyMembers } from "@/hooks/use-api"
+import { useI18n } from "@/contexts/i18n-context"
 
 type FilterMember = {
   id: string;
@@ -22,18 +23,19 @@ type FilterMember = {
 }
 
 export function UserFilter() {
+  const { t } = useI18n();
   const { familyId, familyMembers: contextMembers, selectedUserIds, setSelectedUserIds, setFamilyMembers } = useFamily();
   const { data: membersData, isLoading, execute: loadMembers } = useFamilyMembers();
   const [members, setMembers] = useState<FilterMember[]>([])
 
-  // Load family members when component mounts or familyId changes
+
   useEffect(() => {
     if (familyId) {
       loadMembers(familyId);
     }
   }, [familyId, loadMembers]);
 
-  // Update context family members when API data arrives
+
   useEffect(() => {
     if (membersData) {
       setFamilyMembers(membersData);
@@ -45,7 +47,7 @@ export function UserFilter() {
     if (contextMembers.length > 0) {
       // Filter to show only active members
       const activeMembers = contextMembers.filter(m => m.status === "ACTIVE");
-      
+
       const transformedMembers: FilterMember[] = activeMembers.map((member) => {
         const checked = selectedUserIds.length === 0 || selectedUserIds.includes(member.userId);
         return {
@@ -61,7 +63,7 @@ export function UserFilter() {
 
   const handleCheckedChange = (id: string, checked: boolean) => {
     const userId = Number(id);
-    
+
     // Update local state for immediate UI feedback
     setMembers((prev) =>
       prev.map((member) => {
@@ -71,7 +73,7 @@ export function UserFilter() {
         return member
       }),
     )
-    
+
     // Update context
     if (selectedUserIds.length === 0) {
       // Currently showing all users
@@ -98,8 +100,8 @@ export function UserFilter() {
     }
   }
 
-  const selectedCount = selectedUserIds.length === 0 
-    ? members.filter((member) => member.checked).length 
+  const selectedCount = selectedUserIds.length === 0
+    ? members.filter((member) => member.checked).length
     : selectedUserIds.length;
   const totalCount = members.length
 
@@ -109,7 +111,7 @@ export function UserFilter() {
         <Button variant="outline" className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           <span>
-            Users: {selectedCount}/{totalCount}
+            {t("common.users")} {selectedCount}/{totalCount}
           </span>
         </Button>
       </DropdownMenuTrigger>

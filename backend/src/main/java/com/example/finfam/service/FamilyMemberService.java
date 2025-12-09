@@ -7,9 +7,11 @@ import com.example.finfam.exception.CustomException;
 import com.example.finfam.model.Family;
 import com.example.finfam.model.FamilyMember;
 import com.example.finfam.model.User;
+import com.example.finfam.model.Account;
 import com.example.finfam.repository.FamilyMemberRepository;
 import com.example.finfam.repository.FamilyRepository;
 import com.example.finfam.repository.UserRepository;
+import com.example.finfam.repository.AccountRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class FamilyMemberService {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final FamilyRepository familyRepository;
+    private final AccountRepository accountRepository;
 
     private FamilyMember.Role mapRole(String role) {
         String normalizedRole = role.toUpperCase();
@@ -148,6 +151,17 @@ public class FamilyMemberService {
             }
         }
 
+        // Get user ID before deleting member
+        Integer userIdToRemove = member.getUser().getId();
+
+        // Delete all accounts of this user in this family
+        // This will automatically delete all transactions due to CASCADE constraint
+        List<Account> userAccounts = accountRepository.findByUserIdAndFamilyId(userIdToRemove, familyId);
+        if (!userAccounts.isEmpty()) {
+            accountRepository.deleteAll(userAccounts);
+        }
+
+        // Remove the family member
         familyMemberRepository.delete(member);
     }
 
@@ -216,6 +230,43 @@ public class FamilyMemberService {
         // Update the status to ACTIVE
         member.setStatus(FamilyMember.Status.ACTIVE);
         familyMemberRepository.save(member);
+    }
+
+    @Transactional
+    public void leaveFamily(Integer familyId, String token) {
+        String jwtToken = token != null && token.startsWith("Bearer ") ? token.substring(7) : token;
+        Integer userId = jwtService.extractUserId(jwtToken);
+
+        // Get family to check if user is the owner
+        Family family = familyRepository.findById(familyId)
+                .orElseThrow(() -> new CustomException("Família não encontrada"));
+
+        // Check if user is the owner (createdBy)
+        if (family.getCreatedBy().getId().equals(userId)) {
+            throw new CustomException("O criador da família não pode sair. Transfira a propriedade primeiro ou delete a família.");
+        }
+
+        // Get the member record
+        FamilyMember member = familyMemberRepository.findByUserIdAndFamilyId(userId, familyId)
+                .orElseThrow(() -> new CustomException("Você não é membro desta família"));
+
+        // Check if trying to leave as the only admin
+        if (member.getRole() == FamilyMember.Role.ADMIN) {
+            long adminCount = familyMemberRepository.countAdminsByFamilyId(familyId);
+            if (adminCount <= 1) {
+                throw new CustomException("Não é possível sair sendo o único administrador. Promova outro membro a administrador primeiro.");
+            }
+        }
+
+        // Delete all accounts of this user in this family
+        // This will automatically delete all transactions due to CASCADE constraint
+        List<Account> userAccounts = accountRepository.findByUserIdAndFamilyId(userId, familyId);
+        if (!userAccounts.isEmpty()) {
+            accountRepository.deleteAll(userAccounts);
+        }
+
+        // Remove the member
+        familyMemberRepository.delete(member);
     }
 
     private FamilyMemberResponse toResponse(FamilyMember member) {

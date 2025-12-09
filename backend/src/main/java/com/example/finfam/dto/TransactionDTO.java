@@ -21,7 +21,7 @@ import static com.example.finfam.utils.TransactionTypeConverter.resolveAsString;
 @Data
 @Builder
 public class TransactionDTO {
-    private String pluggyId; // novo campo
+    private String pluggyId;
     private int accountId;
     private String accountName;
     private int userId;
@@ -31,21 +31,21 @@ public class TransactionDTO {
     private LocalDate transactionDate;
     private String transactionType;
 
-    // converte do Pluggy para DTO
+
     public static List<TransactionDTO> convertToTransactionDTOs(List<OpenBankTransactionResponse> pluggyTransactions,
                                                                 int accountId, String accountName, int userId, int familyId) {
 
         return pluggyTransactions.stream().map(tx -> {
             try {
-                // Parse date
+          
                 ZonedDateTime zonedDateTime = ZonedDateTime.parse(tx.getDate(), DateTimeFormatter.ISO_DATE_TIME);
                 LocalDate transactionDate = zonedDateTime.toLocalDate();
 
-                // Determine transaction type
+          
                 String transactionType = resolveAsString(BigDecimal.valueOf(tx.getAmount()));
 
                 return TransactionDTO.builder()
-                        .pluggyId(tx.getId()) // ✅ novo campo
+                        .pluggyId(tx.getId()) 
                         .accountId(accountId)
                         .accountName(accountName)
                         .userId(userId)
@@ -61,10 +61,10 @@ public class TransactionDTO {
         }).collect(Collectors.toList());
     }
 
-    // converte DTO para entidade
+   
     public static Transaction toEntity(TransactionCreateRequest dto) {
         return Transaction.builder()
-                .pluggyId(dto.getPluggyId()) // ✅ set pluggyId
+                .pluggyId(dto.getPluggyId())
                 .accountId(dto.getAccountId())
                 .userId(dto.getUserId())
                 .familyId(dto.getFamilyId())

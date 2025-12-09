@@ -25,7 +25,8 @@
     "status": "Status",
     "active": "Active",
     "pending": "Pending",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "users": "Users"
   },
   "auth": {
     "login": "Login",
@@ -138,7 +139,8 @@
     "deleteMember": "Delete Member",
     "resendInvite": "Resend Invite",
     "noMembers": "No members found",
-    "pendingInvites": "Pending Invites"
+    "pendingInvites": "Pending Invites",
+    "leaveFamily": "Leave Family"
   },
   "transactions": {
     "title": "Transactions",
@@ -275,4 +277,3 @@
     }
   }
 }
-

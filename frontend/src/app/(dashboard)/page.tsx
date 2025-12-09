@@ -7,7 +7,7 @@ import { FinancialMetrics } from "@/components/financial-metrics";
 import { ConnectBankButton } from "@/components/connect-bank-button";
 import { UserFilter } from "@/components/user-filter";
 import { DateFilter } from "@/components/date-filter";
-import { CategoryFilter } from "@/components/category-filter";
+
 import {
   useBankStatement,
   useFamilyFinancials,
@@ -90,7 +90,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-2">
           <ConnectBankButton />
           <UserFilter />
-          <CategoryFilter />
+
         </div>
       </div>
 

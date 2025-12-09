@@ -3,12 +3,15 @@ package com.example.finfam.controller;
 import com.example.finfam.dto.request.TransactionCreateRequest;
 import com.example.finfam.dto.request.TransactionUpdateRequest;
 import com.example.finfam.model.Transaction;
+import com.example.finfam.service.JwtService;
 import com.example.finfam.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +25,7 @@ import java.util.List;
 @Tag(name = "Transactions", description = "Operações de CRUD para transações financeiras")
 public class TransactionController {
     private final TransactionService transactionService;
+    private final JwtService jwtService;
 
     @PostMapping
     @Operation(summary = "Criar transação", description = "Cria uma nova transação financeira")
@@ -111,6 +115,102 @@ public class TransactionController {
             @Parameter(description = "Data inicial (YYYY-MM-DD)") @RequestParam LocalDate start, 
             @Parameter(description = "Data final (YYYY-MM-DD)") @RequestParam LocalDate end) {
         return ResponseEntity.ok(transactionService.getTransactionsByDateRange(start, end));
+    }
+
+    @PostMapping("/auto-categorize")
+    @Operation(summary = "Categorizar automaticamente transações", description = "Usa ML para categorizar transações sem categoria")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transações categorizadas com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<List<Transaction>> autoCategorize(
+            @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token,
+            @Parameter(description = "ID da família") @RequestParam Integer familyId) {
+        String jwtToken = token.substring(7);
+        Integer userId = jwtService.extractUserId(jwtToken);
+        List<Transaction> transactions = transactionService.autoCategorizeTransactions(userId, familyId);
+        return ResponseEntity.ok(transactions);
+    }
+
+    @PostMapping("/confirm-category")
+    @Operation(summary = "Confirmar categoria sugerida", description = "Confirma a categoria sugerida pelo ML")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Categoria confirmada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Transaction> confirmCategory(
+            @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token,
+            @RequestBody ConfirmCategoryRequest request) {
+        String jwtToken = token.substring(7);
+        Integer userId = jwtService.extractUserId(jwtToken);
+        Transaction transaction = transactionService.confirmCategory(
+            request.getTransactionId(), 
+            request.getFamilyId(), 
+            userId
+        );
+        return ResponseEntity.ok(transaction);
+    }
+
+    @PostMapping("/reject-category")
+    @Operation(summary = "Rejeitar categoria sugerida", description = "Rejeita a categoria sugerida pelo ML")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Categoria rejeitada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Void> rejectCategory(
+            @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token,
+            @RequestBody RejectCategoryRequest request) {
+        String jwtToken = token.substring(7);
+        Integer userId = jwtService.extractUserId(jwtToken);
+        transactionService.rejectCategory(
+            request.getTransactionId(), 
+            request.getFamilyId(), 
+            userId
+        );
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/correct-category")
+    @Operation(summary = "Corrigir categoria", description = "Corrige a categoria manualmente e reforça o modelo ML")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Categoria corrigida com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Transaction> correctCategory(
+            @Parameter(description = "Token JWT de autorização") @RequestHeader(name = "Authorization") String token,
+            @RequestBody CorrectCategoryRequest request) {
+        String jwtToken = token.substring(7);
+        Integer userId = jwtService.extractUserId(jwtToken);
+        Transaction transaction = transactionService.correctCategory(
+            request.getTransactionId(), 
+            request.getFamilyId(), 
+            userId,
+            request.getNewCategory()
+        );
+        return ResponseEntity.ok(transaction);
+    }
+
+    @Data
+    static class ConfirmCategoryRequest {
+        private Integer transactionId;
+        private Integer familyId;
+    }
+
+    @Data
+    static class RejectCategoryRequest {
+        private Integer transactionId;
+        private Integer familyId;
+    }
+
+    @Data
+    static class CorrectCategoryRequest {
+        private Integer transactionId;
+        private Integer familyId;
+        private String newCategory;
     }
 }
 

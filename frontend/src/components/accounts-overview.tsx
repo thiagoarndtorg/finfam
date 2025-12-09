@@ -54,12 +54,12 @@ export function AccountsOverview() {
     setIsAddAccountModalOpen(false);
   };
 
- 
+
 
   const handleAddExpense = async (amount: number, account: number, category: string) => {
     // Note: In a real app, you would call the API here to create the expense transaction
     // For now, we'll just update local state and refresh data
-    
+
     setAccounts(
       accounts.map((acc) => {
         if (acc.id === account) {
@@ -68,14 +68,14 @@ export function AccountsOverview() {
         return acc;
       })
     );
-    
+
     // Refresh family data to get latest balance and transactions from backend
     try {
       await refreshFamilyData();
     } catch (error) {
       console.error("Failed to refresh family data after expense:", error);
     }
-    
+
     setIsAddExpenseModalOpen(false);
   };
 
@@ -110,9 +110,7 @@ export function AccountsOverview() {
 
   // Função para obter o nome do banco
   const getBankName = (bankId: number) => {
-    if (!banksData?.banks) return `Banco ID: ${bankId}`;
-    const bank = banksData.banks.find((b: { id: number }) => b.id === bankId);
-    return bank ? bank.name : `Banco ID: ${bankId}`;
+    return ""
   };
 
   return (
@@ -154,47 +152,48 @@ export function AccountsOverview() {
                   </p>
                 </div>
               ) : (
-                accounts.map((account) => { 
-                
+                accounts.map((account) => {
+
                   console.log(account)
                   return (
-                  
-                  <div key={account.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ 
-                          backgroundColor: account.color || getBankColor((account as any).bankEnum)
-                        }}
-                        aria-hidden="true"
-                      ></div>
-                      <div>
-                        <p className="text-sm font-medium">{account.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {getBankName(account.bankId)}
-                        </p>
+
+                    <div key={account.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{
+                            backgroundColor: account.color || getBankColor((account as any).bankEnum)
+                          }}
+                          aria-hidden="true"
+                        ></div>
+                        <div>
+                          <p className="text-sm font-medium">{account.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {getBankName(account.bankId)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{formatBrazilianCurrency(account.balance)}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRefreshSingleAccount(account.id)}
+                          disabled={refreshingAccountId === account.id}
+                          className={refreshingAccountId === account.id ? "animate-spin" : ""}
+                          title={t("dashboard.refreshThisAccount")}
+                        >
+                          <RefreshCcw className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{formatBrazilianCurrency(account.balance)}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRefreshSingleAccount(account.id)}
-                        disabled={refreshingAccountId === account.id}
-                        className={refreshingAccountId === account.id ? "animate-spin" : ""}
-                        title={t("dashboard.refreshThisAccount")}
-                      >
-                        <RefreshCcw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )})
+                  )
+                })
               )}
             </div>
           </>
         )}
-         
+
       </CardContent>
 
       <AddAccountModal

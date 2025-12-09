@@ -13,9 +13,12 @@ export interface Transaction {
   accountId: number;
   userId: number;
   familyId: number;
-  category: Category;
+  category: Category | null;
   amount: number;
   description: string;
   transactionDate: string;
   transactionType: "EXPENSE" | "INCOME";
+  mlSuggestedCategory?: string | null;
+  mlConfidence?: number | null;
+  mlPendingConfirmation?: boolean | null;
 }

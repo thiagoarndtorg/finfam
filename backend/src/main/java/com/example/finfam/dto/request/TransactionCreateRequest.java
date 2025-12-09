@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 @Data
 public class TransactionCreateRequest {
-    private String pluggyId;      // novo campo
+    private String pluggyId; 
     private Integer accountId;
     private Integer userId;
     private Integer familyId;

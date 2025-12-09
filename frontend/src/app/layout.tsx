@@ -9,7 +9,7 @@ import { Toaster } from "react-hot-toast";
 import type React from "react";
 import { FamilyProvider } from "@/contexts/family-context";
 import { ThemeFavicon } from "@/components/theme-favicon";
-
+import { Source_Code_Pro } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -25,12 +25,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        {/* ícone inicial que será TROCAD0 pelo componente ThemeFavicon */}
+
         <link id="dynamic-favicon" rel="icon" href="/finfam.ico" />
       </head>
 
       <body className={inter.className}>
-        <ThemeFavicon /> {/* 🔥 favicon dinâmico aqui */}
+        <ThemeFavicon />
 
         <I18nProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -38,11 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <SettingsProvider>
                 <FamilyProvider>
                   <TooltipProvider delayDuration={0}>
-                    <Toaster 
+                    <Toaster
                       position="bottom-center"
                       toastOptions={{
                         duration: 4000,
-                        id: undefined, // Allow custom IDs
+                        id: undefined,
                       }}
                     />
                     {children}

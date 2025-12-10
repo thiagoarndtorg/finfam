@@ -18,7 +18,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception e) {
+        // Log the exception for debugging
+        System.err.println("Unhandled exception: " + e.getMessage());
+        e.printStackTrace();
+        
+        // Return a more informative error message in development
+        String errorMessage = "Um erro inesperado ocorreu";
+        if (e.getMessage() != null && !e.getMessage().isEmpty()) {
+            errorMessage += ": " + e.getMessage();
+        }
+        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("Um erro inesperado ocorreu"));
+                .body(new ErrorResponse(errorMessage));
     }
 }

@@ -19,6 +19,12 @@ export function EditMemberModal({ isOpen, onClose, member, onSave }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    if (!role) {
+      console.error("Role is required");
+      return;
+    }
+    
     setIsLoading(true)
 
     try {

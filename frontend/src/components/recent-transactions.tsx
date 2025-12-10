@@ -40,9 +40,9 @@ import { DeleteTransactionModal } from "./delete-transaction-modal";
 import { CorrectCategoryModal } from "./correct-category-modal";
 import { useFamily } from "@/contexts/family-context";
 import { useI18n } from "@/contexts/i18n-context";
-import { 
-  useFamilyFinancials, 
-  useUpdateTransaction, 
+import {
+  useFamilyFinancials,
+  useUpdateTransaction,
   useDeleteTransaction,
   useAutoCategorize,
   useConfirmCategory,
@@ -51,6 +51,12 @@ import {
 } from "@/hooks/use-api";
 import { Sparkles, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Start with empty; will load from backend
 const initialTransactions: any[] = [];
@@ -136,6 +142,17 @@ export function RecentTransactions() {
   const filterCategories = ["all", ...new Set(transactions.map((t) => t.category))];
   const accounts = ["all", ...new Set(transactions.map((t) => t.account))];
 
+  // Count categorized transactions (transactions with a category that is not "uncategorized")
+  const categorizedTransactionsCount = useMemo(() => {
+    const uncategorizedLabel = t("transactions.uncategorized");
+    return transactions.filter(
+      (t) => t.categoryId != null && t.category !== uncategorizedLabel
+    ).length;
+  }, [transactions, t]);
+
+  // Check if auto-categorize should be enabled (need at least 5 categorized transactions)
+  const isAutoCategorizeEnabled = categorizedTransactionsCount >= 5;
+
   // Handle sorting
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -201,13 +218,13 @@ export function RecentTransactions() {
         transactionType: updatedTransaction.type.toUpperCase(),
       });
 
-    if (!apiResponse) {
-      throw new Error("Failed to update transaction: API returned no response");
-    }
+      if (!apiResponse) {
+        throw new Error("Failed to update transaction: API returned no response");
+      }
 
-    // Update context with API response, including the full category object
-    // Find current transaction from context to preserve category if API doesn't return it
-     // Update context with API response, including the full category object
+      // Update context with API response, including the full category object
+      // Find current transaction from context to preserve category if API doesn't return it
+      // Update context with API response, including the full category object
       // Find current transaction from context to preserve category if API doesn't return it
       const currentTransaction = contextTransactions.find((t: any) => t.id === Number(updatedTransaction.id));
       updateTransaction(Number(updatedTransaction.id), {
@@ -223,13 +240,13 @@ export function RecentTransactions() {
       // If we get an error but the transaction might have been updated on the backend,
       // refresh the data to get the latest state
       console.error("Error updating transaction:", error);
-      
+
       // Refresh family data to sync with backend state
       await refreshFamilyData();
-      
+
       // Close the modal anyway since the update might have succeeded on the backend
       setEditingTransaction(null);
-      
+
       // Re-throw to let the modal handle the error display
       throw error;
     }
@@ -262,7 +279,7 @@ export function RecentTransactions() {
       toast.error("ID da família não encontrado.");
       return;
     }
-    
+
     try {
       console.log("Starting auto-categorize for familyId:", familyId);
       const result = await autoCategorize({ familyId });
@@ -284,7 +301,7 @@ export function RecentTransactions() {
   // Handle confirm category
   const handleConfirmCategory = async (transactionId: number) => {
     if (!familyId) return;
-    
+
     try {
       const updatedTransaction = await confirmCategory({ transactionId, familyId });
       if (updatedTransaction) {
@@ -295,22 +312,22 @@ export function RecentTransactions() {
           mlConfidence: null,
           mlPendingConfirmation: false,
         });
-        
+
         // Also update local state immediately for instant feedback
-        setTransactions(prev => prev.map(t => 
-          t.transactionId === transactionId 
+        setTransactions(prev => prev.map(t =>
+          t.transactionId === transactionId
             ? {
-                ...t,
-                category: updatedTransaction.category?.name || t("transactions.uncategorized"),
-                categoryId: updatedTransaction.category?.id,
-                categoryObject: updatedTransaction.category,
-                mlSuggestedCategory: null,
-                mlConfidence: null,
-                mlPendingConfirmation: false,
-              }
+              ...t,
+              category: updatedTransaction.category?.name || t("transactions.uncategorized"),
+              categoryId: updatedTransaction.category?.id,
+              categoryObject: updatedTransaction.category,
+              mlSuggestedCategory: null,
+              mlConfidence: null,
+              mlPendingConfirmation: false,
+            }
             : t
         ));
-        
+
         toast.success("Categoria confirmada!");
       }
     } catch (error) {
@@ -322,29 +339,29 @@ export function RecentTransactions() {
   // Handle reject category
   const handleRejectCategory = async (transactionId: number) => {
     if (!familyId) return;
-    
+
     try {
       await rejectCategory({ transactionId, familyId });
-      
+
       // Update context transaction
       updateTransaction(transactionId, {
         mlSuggestedCategory: null,
         mlConfidence: null,
         mlPendingConfirmation: false,
       });
-      
+
       // Also update local state immediately
-      setTransactions(prev => prev.map(t => 
-        t.transactionId === transactionId 
+      setTransactions(prev => prev.map(t =>
+        t.transactionId === transactionId
           ? {
-              ...t,
-              mlSuggestedCategory: null,
-              mlConfidence: null,
-              mlPendingConfirmation: false,
-            }
+            ...t,
+            mlSuggestedCategory: null,
+            mlConfidence: null,
+            mlPendingConfirmation: false,
+          }
           : t
       ));
-      
+
       toast.success("Sugestão rejeitada.");
     } catch (error) {
       console.error("Failed to reject category:", error);
@@ -355,12 +372,12 @@ export function RecentTransactions() {
   // Handle correct category
   const handleCorrectCategory = async (categoryName: string) => {
     if (!familyId || !correctingTransaction) return;
-    
+
     try {
-      const updatedTransaction = await correctCategory({ 
-        transactionId: correctingTransaction, 
-        familyId, 
-        newCategory: categoryName 
+      const updatedTransaction = await correctCategory({
+        transactionId: correctingTransaction,
+        familyId,
+        newCategory: categoryName
       });
       if (updatedTransaction) {
         // Update context transaction
@@ -370,22 +387,22 @@ export function RecentTransactions() {
           mlConfidence: null,
           mlPendingConfirmation: false,
         });
-        
+
         // Also update local state immediately
-        setTransactions(prev => prev.map(t => 
-          t.transactionId === correctingTransaction 
+        setTransactions(prev => prev.map(t =>
+          t.transactionId === correctingTransaction
             ? {
-                ...t,
-                category: updatedTransaction.category?.name || t("transactions.uncategorized"),
-                categoryId: updatedTransaction.category?.id,
-                categoryObject: updatedTransaction.category,
-                mlSuggestedCategory: null,
-                mlConfidence: null,
-                mlPendingConfirmation: false,
-              }
+              ...t,
+              category: updatedTransaction.category?.name || t("transactions.uncategorized"),
+              categoryId: updatedTransaction.category?.id,
+              categoryObject: updatedTransaction.category,
+              mlSuggestedCategory: null,
+              mlConfidence: null,
+              mlPendingConfirmation: false,
+            }
             : t
         ));
-        
+
         toast.success("Categoria corrigida!");
         setCorrectingTransaction(null);
       }
@@ -400,14 +417,27 @@ export function RecentTransactions() {
       <CardHeader className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
         <CardTitle className="text-xl font-medium">{t("dashboard.recentTransactions")}</CardTitle>
         <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
-          <Button 
-            onClick={handleAutoCategorize} 
-            disabled={isCategorizing || !familyId}
-            className="flex items-center gap-2"
-          >
-            <Sparkles className="h-4 w-4" />
-            {isCategorizing ? t("common.loading") : "Categorizar automaticamente"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-block">
+                  <Button
+                    onClick={handleAutoCategorize}
+                    disabled={isCategorizing || !familyId || !isAutoCategorizeEnabled}
+                    className="flex items-center gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {isCategorizing ? t("common.loading") : t("categories.autoCategory")}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!isAutoCategorizeEnabled && familyId && !isCategorizing && (
+                <TooltipContent>
+                  <p>{t("categories.infoCategory")}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -535,8 +565,8 @@ export function RecentTransactions() {
                         <TableCell className="text-right">
                           <span
                             className={`inline-flex items-center ${transaction.type === "income"
-                                ? "text-green-600 dark:text-green-400"
-                                : "text-red-600 dark:text-red-400"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
                               }`}
                           >
                             {transaction.type === "income" ? "+" : "-"}R${" "}
@@ -576,7 +606,7 @@ export function RecentTransactions() {
             </Table>
           </div>
         )}
-        
+
         {/* Pagination Controls */}
         {filteredTransactions.length > 0 && (
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
@@ -600,7 +630,7 @@ export function RecentTransactions() {
               </Select>
               <span className="text-sm text-muted-foreground">por página</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"

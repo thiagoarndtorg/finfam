@@ -13,6 +13,7 @@ import com.example.finfam.repository.FamilyRepository;
 import com.example.finfam.repository.UserRepository;
 import com.example.finfam.repository.AccountRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,13 +31,16 @@ public class FamilyMemberService {
     private final AccountRepository accountRepository;
 
     private FamilyMember.Role mapRole(String role) {
-        String normalizedRole = role.toUpperCase();
+        if (role == null || role.trim().isEmpty()) {
+            throw new CustomException("Role não pode ser vazia");
+        }
+        String normalizedRole = role.toUpperCase().trim();
         if ("ADMIN".equals(normalizedRole)) {
             return FamilyMember.Role.ADMIN;
         } else if ("MEMBER".equals(normalizedRole) || "VIEWER".equals(normalizedRole)) {
             return FamilyMember.Role.MEMBER;
         } else {
-            throw new CustomException("Role inválida");
+            throw new CustomException("Role inválida: " + role);
         }
     }
 
@@ -96,39 +100,78 @@ public class FamilyMemberService {
 
     @Transactional
     public void updateMemberRole(Integer familyId, Integer memberId, String requesterToken, UpdateMemberRoleRequest request) {
-        String jwtToken = requesterToken != null && requesterToken.startsWith("Bearer ") ? requesterToken.substring(7) : requesterToken;
-        Integer requesterId = jwtService.extractUserId(jwtToken);
-
-        // Validate requester is ADMIN
-        if (!isAdmin(requesterId, familyId)) {
-            throw new CustomException("Apenas administradores podem atualizar roles");
-        }
-
-        // Get and update member
-        FamilyMember member = familyMemberRepository.findById(memberId)
-                .orElseThrow(() -> new CustomException("Membro não encontrado"));
-
-        if (!member.getFamily().getId().equals(familyId)) {
-            throw new CustomException("Membro não pertence à família especificada");
-        }
-
-        // Check if demoting the last admin
-        FamilyMember.Role newRole = mapRole(request.getRole());
-        if (member.getRole() == FamilyMember.Role.ADMIN && newRole == FamilyMember.Role.MEMBER) {
-            long adminCount = familyMemberRepository.countAdminsByFamilyId(familyId);
-            if (adminCount <= 1) {
-                throw new CustomException("Não é possível remover o único administrador");
+        try {
+            if (request == null || request.getRole() == null || request.getRole().trim().isEmpty()) {
+                throw new CustomException("Role é obrigatória");
             }
-        }
+            
+            String jwtToken = requesterToken != null && requesterToken.startsWith("Bearer ") ? requesterToken.substring(7) : requesterToken;
+            Integer requesterId = jwtService.extractUserId(jwtToken);
+            
+            if (requesterId == null) {
+                throw new CustomException("Token de autorização inválido");
+            }
 
-        member.setRole(newRole);
-        familyMemberRepository.save(member);
+            // Validate requester is ADMIN
+            if (!isAdmin(requesterId, familyId)) {
+                throw new CustomException("Apenas administradores podem atualizar roles");
+            }
+
+            // Verify member belongs to the family first (avoids lazy loading issues)
+            if (!familyMemberRepository.existsByIdAndFamilyId(memberId, familyId)) {
+                throw new CustomException("Membro não pertence à família especificada");
+            }
+
+            // Get and update member
+            FamilyMember member = familyMemberRepository.findById(memberId)
+                    .orElseThrow(() -> new CustomException("Membro não encontrado"));
+
+            // Get family to check if member is the creator
+            Family family = familyRepository.findById(familyId)
+                    .orElseThrow(() -> new CustomException("Família não encontrada"));
+            
+            // Check if trying to change role of the family creator (owner)
+            // O criador da família sempre deve ser ADMIN e não pode ter seu role alterado
+            Integer memberUserId = member.getUser().getId();
+            if (family.getCreatedBy() != null && family.getCreatedBy().getId().equals(memberUserId)) {
+                FamilyMember.Role newRole = mapRole(request.getRole());
+                // Don't allow changing the owner's role from ADMIN
+                if (newRole != FamilyMember.Role.ADMIN) {
+                    throw new CustomException("O criador da família sempre deve ser administrador e não pode ter seu role alterado");
+                }
+                // If trying to set to ADMIN (which is already the case), just return success
+                return;
+            }
+
+            // Check if demoting the last admin
+            FamilyMember.Role newRole = mapRole(request.getRole());
+            if (member.getRole() == FamilyMember.Role.ADMIN && newRole == FamilyMember.Role.MEMBER) {
+                long adminCount = familyMemberRepository.countAdminsByFamilyId(familyId);
+                if (adminCount <= 1) {
+                    throw new CustomException("Não é possível remover o único administrador");
+                }
+            }
+
+            member.setRole(newRole);
+            familyMemberRepository.save(member);
+        } catch (CustomException e) {
+            throw e; // Re-throw CustomException as-is
+        } catch (Exception e) {
+            // Log the actual exception for debugging
+            System.err.println("Error updating member role: " + e.getMessage());
+            e.printStackTrace();
+            throw new CustomException("Erro ao atualizar role do membro: " + e.getMessage());
+        }
     }
 
     @Transactional
     public void removeMember(Integer familyId, Integer memberId, String requesterToken) {
         String jwtToken = requesterToken != null && requesterToken.startsWith("Bearer ") ? requesterToken.substring(7) : requesterToken;
         Integer requesterId = jwtService.extractUserId(jwtToken);
+        
+        if (requesterId == null) {
+            throw new CustomException("Token de autorização inválido");
+        }
 
         // Validate requester is ADMIN
         if (!isAdmin(requesterId, familyId)) {
@@ -141,6 +184,15 @@ public class FamilyMemberService {
 
         if (!member.getFamily().getId().equals(familyId)) {
             throw new CustomException("Membro não pertence à família especificada");
+        }
+
+        // Check if trying to remove the family creator (created_by)
+        // O criador da família não pode ser removido por ninguém
+        Integer memberUserId = member.getUser().getId();
+        Family family = familyRepository.findById(familyId)
+                .orElseThrow(() -> new CustomException("Família não encontrada"));
+        if (family.getCreatedBy() != null && family.getCreatedBy().getId().equals(memberUserId)) {
+            throw new CustomException("O criador da família não pode ser removido");
         }
 
         // Check if trying to remove oneself as the only admin

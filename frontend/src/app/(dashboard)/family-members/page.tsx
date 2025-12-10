@@ -51,6 +51,9 @@ export default function FamilyMembersPage() {
   }, [membersData]);
 
   const toBackendRole = (role) => {
+    if (!role) {
+      throw new Error("Role is required");
+    }
     if (role === "member") return "MEMBER";
     if (role === "admin") return "ADMIN";
     return role.toUpperCase();

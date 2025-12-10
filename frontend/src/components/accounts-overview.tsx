@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Send, CreditCard, MoreHorizontal, RefreshCcw } from "lucide-react";
@@ -15,7 +15,7 @@ import { getBankColor, formatBrazilianCurrency } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 export function AccountsOverview() {
-  const { familyId, refreshFamilyData } = useFamily();
+  const { familyId, refreshFamilyData, familyData } = useFamily();
   const { t } = useI18n();
   const { data: accountsData, isLoading, error, execute: fetchAccounts } = useFamilyAccountsTemp();
   const { execute: syncAccount } = useSyncAccount();
@@ -32,6 +32,24 @@ export function AccountsOverview() {
       fetchAccounts(familyId);
     }
   }, [familyId]); // Removido fetchAccounts da dependência
+
+  // Refresh accounts when familyData changes (e.g., after bank connection)
+  // Use a ref to track last refresh to avoid too frequent refreshes
+  const lastRefreshRef = useRef<number>(0);
+  useEffect(() => {
+    if (familyId && familyData) {
+      const now = Date.now();
+      // Only refresh if at least 1 second has passed since last refresh (debounce)
+      if (now - lastRefreshRef.current > 1000) {
+        lastRefreshRef.current = now;
+        // Small delay to ensure backend has processed the new data
+        const timeoutId = setTimeout(() => {
+          fetchAccounts(familyId);
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [familyData?.accounts?.length, familyId]); // Refresh when account count changes
 
   // Atualizar accounts quando accountsData mudar
   useEffect(() => {

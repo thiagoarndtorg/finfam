@@ -215,7 +215,7 @@ public class OpenBankService {
     }
 
 
-    // Sync Bank Statement and Connect Account
+
 
     public OpenBankStatementResponse syncBankStatement(OpenBankFetchRequest request, String token) throws IOException {
         String itemId = request.getItemId();
@@ -289,14 +289,14 @@ public class OpenBankService {
         }
         totalBalance = totalBalance + pluggyAccounts.get(0).getBalance();
         
-        // Get user name
+
         User user = userService.findById(userId);
         String userName = user.getUsername() != null ? user.getUsername() : user.getEmail();
         
-        // Save the account using AccountService
+
         Account account = accountService.saveAccount(userId, familyId, bank.getId(), cleanItemId, bank.getName() + " Account - " + userName, totalBalance);
 
-        //Save the transactions
+
         var transactions = TransactionDTO.convertToTransactionDTOs(allTransactions, account.getId(), account.getName(), userId, familyId);
         transactionService.saveTransactions(transactions);
 
@@ -306,9 +306,9 @@ public class OpenBankService {
         return response;
     }
 
-    // Auto-sync all user's connected accounts
+
     public List<OpenBankStatementResponse> autoSyncUserAccounts(Integer userId, Integer familyId) throws IOException {
-        // Get all accounts for this user and family
+
         List<Account> userAccounts = accountService.getAccountsByUserAndFamily(userId, familyId);
         
         if (userAccounts.isEmpty()) {
@@ -322,22 +322,22 @@ public class OpenBankService {
 
         for (Account account : userAccounts) {
             try {
-                // Skip if account doesn't have itemId
+
                 if (account.getItemId() == null || account.getItemId().trim().isEmpty()) {
                     continue;
                 }
 
                 String cleanItemId = account.getItemId().replaceAll("\"", "");
                 
-                // Get current account data from Pluggy
+
                 List<OpenBankAccountResponse> pluggyAccounts = getAccounts(cleanItemId, apiKey);
                 if (pluggyAccounts.isEmpty()) {
-                    continue; // Skip if no accounts found
+                    continue;
                 }
 
                 BankEnum bankEnum = pluggyAccounts.get(0).getBankName();
                 
-                // Calculate new total balance
+
                 double totalBalance = 0.00;
                 List<OpenBankTransactionResponse> allTransactions = new ArrayList<>();
 
@@ -346,24 +346,24 @@ public class OpenBankService {
                 }
                 totalBalance = totalBalance + pluggyAccounts.get(0).getBalance();
 
-                // Update account balance in database
+
                 account.setBalance(new BigDecimal(totalBalance));
                 accountService.updateAccount(account);
 
-                // Save transactions; service layer handles duplicates via unique pluggy_id
+
                 var transactions = TransactionDTO.convertToTransactionDTOs(allTransactions, account.getId(), account.getName(), userId, familyId);
                 log.info("Fetched {} transactions from Pluggy for accountId={} (bank={})", allTransactions.size(), account.getId(), bankEnum);
                 transactionService.saveTransactions(transactions);
 
 
 
-                // Create response
+
                 OpenBankStatementResponse response = new OpenBankStatementResponse(cleanItemId, bankEnum, account.getBalance(), allTransactions);
                 response.getTransactions().sort(Comparator.comparing(OpenBankTransactionResponse::getDate).reversed());
                 syncResults.add(response);
 
             } catch (Exception e) {
-                // Log error but continue with other accounts
+
                 log.error("Error syncing account {}: {}", account.getId(), e.getMessage());
             }
         }
@@ -408,15 +408,15 @@ public class OpenBankService {
 
 
 
-    // Sync a single account by accountId
+
     public OpenBankStatementResponse syncSingleAccount(Integer accountId, Integer userId, Integer familyId) throws IOException {
-        // Retrieve the account
+
         Account account = accountService.getAccountsByUserAndFamily(userId, familyId).stream()
                 .filter(acc -> acc.getId().equals(accountId))
                 .findFirst()
                 .orElseThrow(() -> new CustomException("Account not found or does not belong to user/family", org.springframework.http.HttpStatus.NOT_FOUND));
 
-        // Validate ownership
+
         if (!account.getUserId().equals(userId) || !account.getFamilyId().equals(familyId)) {
             throw new CustomException("Account does not belong to user/family", org.springframework.http.HttpStatus.FORBIDDEN);
         }
@@ -427,17 +427,17 @@ public class OpenBankService {
         }
 
         try {
-            // API key
+
             String apiKey = getApiKey();
             String cleanItemId = itemId.replaceAll("\"", "");
 
-            // 🔥 **STEP 1 — Trigger manual Pluggy sync**
+
             triggerPluggySync(cleanItemId, apiKey);
 
-            // 🔥 (Optional) you can wait a bit for the sync to complete:
+
              Thread.sleep(5000);
 
-            // 🔥 **STEP 2 — Fetch accounts from Pluggy**
+
             List<OpenBankAccountResponse> pluggyAccounts = getAccounts(cleanItemId, apiKey);
             if (pluggyAccounts.isEmpty()) {
                 throw new CustomException("No accounts found in Pluggy for this itemId. Please reconnect your bank account.");
@@ -448,17 +448,17 @@ public class OpenBankService {
             double totalBalance = 0.00;
             List<OpenBankTransactionResponse> allTransactions = new ArrayList<>();
 
-            // 🔥 **STEP 3 — Fetch transactions from Pluggy**
+
             for (OpenBankAccountResponse pluggyAccount : pluggyAccounts) {
                 allTransactions.addAll(getTransactions(pluggyAccount.getId(), apiKey, bankEnum));
             }
             totalBalance += pluggyAccounts.get(0).getBalance();
 
-            // 🔥 **STEP 4 — Update account**
+
             account.setBalance(new BigDecimal(totalBalance));
             accountService.updateAccount(account);
 
-            // Save transactions
+
             var transactions = TransactionDTO.convertToTransactionDTOs(
                     allTransactions, account.getId(), account.getName(), userId, familyId);
 
@@ -467,7 +467,7 @@ public class OpenBankService {
 
             transactionService.saveTransactions(transactions);
 
-            // 🔥 **STEP 5 — Build response**
+
             OpenBankStatementResponse response = new OpenBankStatementResponse(
                     cleanItemId, bankEnum, account.getBalance(), allTransactions);
 

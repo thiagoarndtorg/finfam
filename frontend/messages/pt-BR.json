@@ -181,7 +181,9 @@
     "editDescription": "Atualize os detalhes desta categoria de despesas",
     "deleteConfirm": "Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.",
     "categoryNamePlaceholder": "ex: Assinaturas",
-    "emoji": "Emoji"
+    "emoji": "Emoji",
+    "infoCategory": "Favor categorizar ao menos 5 transações antes de utilizar esta funcionalidade.",
+    "autoCategory": "Categorizar Automaticamente"
   },
   "budget": {
     "title": "Orçamento",

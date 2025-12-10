@@ -26,7 +26,7 @@ export function ConnectBankButton() {
   const [itemId, setItemId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<any>([]);
   const { t } = useI18n();
-  const { familyId } = useFamily(); // Get familyId from context
+  const { familyId, refreshFamilyData } = useFamily(); // Get familyId and refreshFamilyData from context
   // API hook
   const connectTokenApi = useConnectToken();
   const bankStatement = useBankStatement();
@@ -56,6 +56,16 @@ export function ConnectBankButton() {
     // Data is ready—handle it later wherever you need
     console.log("Item ID to process later:", data.item.id);
     await fetchTransactions(data.item.id);
+    
+    // Refresh all family data to update accounts, transactions, and other components
+    try {
+      await refreshFamilyData();
+      toast.success(t("toasts.success.bankConnected") || "Bank connected successfully! Data refreshed.");
+    } catch (error) {
+      console.error("Failed to refresh family data after bank connection:", error);
+      // Still show success since the connection worked
+      toast.success(t("toasts.success.bankConnected") || "Bank connected successfully!");
+    }
   };
 
   const fetchTransactions = async (id: string) => {
@@ -63,15 +73,30 @@ export function ConnectBankButton() {
       toast.error("Família não selecionada");
       return;
     }
-    const data = await bankStatement.execute(id, familyId);
-    setTransactions(data?.transactions);
+    try {
+      const data = await bankStatement.execute(id, familyId);
+      setTransactions(data?.transactions);
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+      toast.error(t("toasts.error.fetchTransactions") || "Failed to fetch transactions");
+    }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     console.log("Closing widget...");
+    const wasConnected = !!itemId; // Check if connection was successful before closing
     setShowWidget(false);
+    
     if (!itemId) {
       toast.info(t("toasts.info.bankCancelled"));
+    } else {
+      // If bank was connected, refresh data when widget closes
+      try {
+        await refreshFamilyData();
+        console.log("Family data refreshed after bank connection");
+      } catch (error) {
+        console.error("Failed to refresh family data after closing widget:", error);
+      }
     }
   };
   return (

@@ -59,4 +59,7 @@ public interface FamilyMemberRepository extends JpaRepository<FamilyMember, Inte
 
     @Query("SELECT COUNT(fm) FROM FamilyMember fm WHERE fm.family.id = :familyId AND fm.role = 'ADMIN'")
     long countAdminsByFamilyId(@Param("familyId") Integer familyId);
+    
+    @Query("SELECT COUNT(fm) > 0 FROM FamilyMember fm WHERE fm.id = :memberId AND fm.family.id = :familyId")
+    boolean existsByIdAndFamilyId(@Param("memberId") Integer memberId, @Param("familyId") Integer familyId);
 }

@@ -89,7 +89,7 @@ services:
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: ${OTEL_RESOURCE_ATTRIBUTES_FRONTEND}
-
+      SECRET_KEY: ${SECRET_KEY}
     ports:
       - "3000:3000"
     depends_on:

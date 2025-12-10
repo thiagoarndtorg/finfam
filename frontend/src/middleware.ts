@@ -13,26 +13,8 @@ const publicPaths = [
   "/api/auth",
 ];
 
-const validPaths = [
-  "/",
-  "/auth/register",
-  "/auth/login",
-  "/auth/verify-email",
-  "/accept-invitation",
-  "/home",
-  "/analytics",
-  "/settings",
-  "/budget-management",
-  "/family-members",
-
-]; // Add your valid routes here
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  if (!validPaths.includes(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
 
   // Verificar se a rota atual é pública
   const isPublicRoute = publicPaths.some((path) => pathname.startsWith(path));
@@ -60,15 +42,15 @@ export async function middleware(request: NextRequest) {
   console.log(`Path: ${pathname}, Public: ${isPublicRoute}, Authenticated: ${isAuthenticated}`);
 
   // Se for uma rota de autenticação e o usuário já estiver autenticado,
-  // redirecionar para o dashboard
+  // redirecionar para a raiz (dashboard)
   if (
     isAuthenticated &&
     (pathname.startsWith("/auth/login") ||
       pathname.startsWith("/auth/register") ||
       pathname.startsWith("/auth/forgot-password"))
   ) {
-    console.log("Authenticated user trying to access auth route, redirecting to dashboard");
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    console.log("Authenticated user trying to access auth route, redirecting to home");
+    return NextResponse.redirect(new URL("/", request.url)); // 👈 Mudar de "/dashboard" para "/"
   }
 
   // Se não for uma rota pública e o usuário não estiver autenticado,
@@ -91,6 +73,5 @@ export const config = {
      * - favicon.ico (favicon file)
      */
     "/((?!_next/static|_next/image|finfam.ico|logo_finfam_white.png|logo_finfam_white.ico|logo_finfam_dark.png).*)",
-
   ],
 };

@@ -109,57 +109,60 @@ export function ExpenseSummary() {
         </div>
       </CardHeader>
       <CardContent>
-        {!familyId ? (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-          </div>
-        ) : (
-          <>
-            <div className="text-2xl font-bold mb-4">R$ {totalAmount.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mb-6">
-              {showIncome ? t("dashboard.totalIncome") : t("dashboard.totalExpenses")}
-            </p>
-
-            <div className="h-[200px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                innerRadius={40}
-                outerRadius={80}
-                paddingAngle={2}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, "Amount"]} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="mt-4 space-y-2">
-          {chartData.map((category) => (
-            <div key={category.name} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: category.color }}
-                  aria-hidden="true"
-                ></div>
-                <span className="text-sm">{category.name}</span>
-              </div>
-              <span className="text-sm font-medium">R$ {formatBrazilianCurrency(category.value)}</span>
+        {totalAmount == 0 ? <div className="text-center py-4">
+          <p className="text-sm text-muted-foreground"></p>
+        </div> :
+          !familyId ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
             </div>
-          ))}
-        </div>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="text-2xl font-bold mb-4">R$ {totalAmount.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground mb-6">
+                {showIncome ? t("dashboard.totalIncome") : t("dashboard.totalExpenses")}
+              </p>
+
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, "Amount"]} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {chartData.map((category) => (
+                  <div key={category.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                        aria-hidden="true"
+                      ></div>
+                      <span className="text-sm">{category.name}</span>
+                    </div>
+                    <span className="text-sm font-medium">R$ {formatBrazilianCurrency(category.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
       </CardContent>
     </Card>
   );

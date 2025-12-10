@@ -5,9 +5,9 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  compiler: {
-    removeConsole: true,
-  },
+  // compiler: {
+  //   removeConsole: true,
+  // },
   eslint: {
     ignoreDuringBuilds: true,
   },

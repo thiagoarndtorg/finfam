@@ -64,7 +64,27 @@ public class SecurityConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin(frontendUrl);
+        
+        // Use ONLY addAllowedOriginPattern when allowCredentials is true
+        config.addAllowedOriginPattern("https://*.finfam.site");
+        config.addAllowedOriginPattern("https://finfam.site");
+        config.addAllowedOriginPattern("http://localhost:*");
+        
+        // If frontendUrl is set, add it as a pattern
+        if (frontendUrl != null && !frontendUrl.isEmpty()) {
+            // Ensure it's added as a pattern, not exact origin
+            String pattern = frontendUrl;
+            if (!pattern.contains("*")) {
+                // Convert to pattern by allowing subdomains
+                if (pattern.startsWith("https://")) {
+                    pattern = pattern.replace("https://", "https://*");
+                } else if (pattern.startsWith("http://")) {
+                    pattern = pattern.replace("http://", "http://*");
+                }
+            }
+            config.addAllowedOriginPattern(pattern);
+        }
+        
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);

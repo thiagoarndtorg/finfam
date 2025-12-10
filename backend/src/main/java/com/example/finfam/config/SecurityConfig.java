@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -15,6 +16,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
@@ -32,8 +34,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
-                .cors().and()
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // Use the bean directly
                 .authorizeHttpRequests()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // Explicitly allow OPTIONS
                 .requestMatchers("/api/register", "/api/login", "/api/verify-email", "/api/family/accept-invitation", "/api/auth/google").permitAll()
                 .requestMatchers("/api/health").permitAll() 
                 .requestMatchers(
@@ -61,8 +64,9 @@ public class SecurityConfig {
 
     @Value("${frontend.url}")
     private String frontendUrl;
+
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         
         // Use ONLY addAllowedOriginPattern when allowCredentials is true
@@ -72,10 +76,8 @@ public class SecurityConfig {
         
         // If frontendUrl is set, add it as a pattern
         if (frontendUrl != null && !frontendUrl.isEmpty()) {
-            // Ensure it's added as a pattern, not exact origin
             String pattern = frontendUrl;
             if (!pattern.contains("*")) {
-                // Convert to pattern by allowing subdomains
                 if (pattern.startsWith("https://")) {
                     pattern = pattern.replace("https://", "https://*");
                 } else if (pattern.startsWith("http://")) {
@@ -86,12 +88,12 @@ public class SecurityConfig {
         }
         
         config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
+        config.addAllowedMethod("*");  // This includes OPTIONS
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
 
-        return new CorsFilter(source);
+        return source;
     }
 }
